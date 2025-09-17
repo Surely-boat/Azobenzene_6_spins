@@ -35,17 +35,17 @@ r_mas=[r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56];
 sigma3 = 8.494e-6; sigma4 = 8.373e-6; sigma5 = 8.494e-6; sigma6 = 8.373e-6;
 
 % Скалярные константы связи (Гц)
-J13 = 1.7 * 2 * pi; J14 = -0.4 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
+J13 = 1.67 * 2 * pi; J14 = -0.42 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
 J23 = -0.42 * 2 * pi; J24 = 1.67 * 2 * pi; J25 = 1.67 * 2 * pi; J26 = -0.42 * 2 * pi;
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
 J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 % Параметры расчёта
-NB = 20;
-B = linspace(3, 5.3, NB);
+NB = 1;
+B = linspace(5, 5, NB);
 B = 1 * 10.^(B);
-tau = [2e-10]; 
+tau = [9e-11]; 
 % Константы для диполь-дипольного взаимодействия
 const_HH = 1e6 * g^4 * beta^4 / (h^2);
 const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
@@ -80,10 +80,10 @@ for p = 1:length(tau)
     for l = 1:NB
         % Гамильтониан Зеемана
         H_zeeman = zeros(dim, dim);
-        H_zeeman = H_zeeman + 1e3 * gn * beta * B(l) * (1 - sigma1) / h .* (Iz{1}+Iz{2});
+        H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma1) / h .* (Iz{1}+Iz{2});
         for k = 3:n_spins
             sigma_k = eval(['sigma' num2str(k)]);            
-            H_zeeman = H_zeeman + 1e3 * g * beta * B(l) * (1 - sigma_k) / h .* Iz{k};
+            H_zeeman = H_zeeman - 1e3 * g * beta * B(l) * (1 - sigma_k) / h .* Iz{k};
         end        
         % Гамильтониан скалярного взаимодействия
         H_J = zeros(dim, dim);                
@@ -176,8 +176,8 @@ for p = 1:length(tau)
     hold on;
     plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
     %сохранение в файл
-    to_print=[B, real(ttau_S ./ tau_S)];
-    timestamp = datetime(now, 'yyyy-mm-dd_HH-MM-SS');
+    to_print=[B; real(ttau_S ./ tau_S)'];
+    timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
     fileID = fopen(['data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
     fprintf(fileID,'%6.4f %4.4f\r\n',to_print);
     fclose(fileID);
