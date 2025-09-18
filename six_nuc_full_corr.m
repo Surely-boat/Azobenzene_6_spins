@@ -58,8 +58,8 @@ J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
 J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 % Параметры расчёта
-NB = 40;
-B = linspace(-2, 5.3, NB);
+NB = 15;
+B = linspace(-3, -2, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 % Константы для диполь-дипольного взаимодействия
@@ -96,10 +96,10 @@ for p = 1:length(tau)
     for l = 1:NB
         % Гамильтониан Зеемана
         H_zeeman = zeros(dim, dim);
-        H_zeeman = H_zeeman + 1e3 * gn * beta * B(l) * (1 - sigma1) / h .* (Iz{1}+Iz{2});
+        H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma1) / h .* (Iz{1}+Iz{2});
         for k = 3:n_spins
             sigma_k = eval(['sigma' num2str(k)]);            
-            H_zeeman = H_zeeman + 1e3 * g * beta * B(l) * (1 - sigma_k) / h .* Iz{k};
+            H_zeeman = H_zeeman - 1e3 * g * beta * B(l) * (1 - sigma_k) / h .* Iz{k};
         end        
         % Гамильтониан скалярного взаимодействия
         H_J = zeros(dim, dim);                
@@ -172,18 +172,22 @@ for p = 1:length(tau)
         angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
             [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
         [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
-        i_idx = zeros(1, length(angles));
-        j_idx = zeros(1, length(angles));
-        k_idx = zeros(1, length(angles));
-        m_idx = zeros(1, length(angles));
-        for o = 1:length(angles)
-            i_idx(o) = angles{o}(1);
-            j_idx(o) = angles{o}(2);
-            k_idx(o) = angles{o}(3);
-            m_idx(o) = angles{o}(4);
+        r_1_mas=[r13 r13 r14 r14 r25 r24 r24 r16 r13 r13 r13 r16 r16 r25 r26 r12 r12 r12 r12 r12 r12];
+        r_2_mas=[r14 r16 r16 r24 r26 r25 r26 r26 r24 r26 r25 r25 r24 r14 r14 r13 r14 r16 r25 r26 r24];
+        phi_mas=[phi_3114 phi_3116 phi_4116 phi_1442 phi_5226 phi_4225 phi_4226 phi_1662 phi_1324 phi_1326 phi_1325 phi_1625 ...
+            phi_1624 phi_2514 phi_2614 phi_2113 phi_2114 phi_2116 phi_1225 phi_1226 phi_1224];
+        i_idx=zeros(1, length(angles));
+        j_idx=zeros(1, length(angles));
+        k_idx=zeros(1, length(angles));
+        m_idx=zeros(1, length(angles));
+        for o=1:length(angles)
+            i_idx(o)=angles{o}(1);
+            j_idx(o)=angles{o}(2);
+            k_idx(o)=angles{o}(3);
+            m_idx(o)=angles{o}(4);
         end
-        for idx = 1:length(angles)
-            i = i_idx(idx); j = j_idx(idx); k = k_idx(idx); m = m_idx(idx); 
+        parfor idx = 1:length(angles)
+            i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
             NN_switch=0;
             %first pair
             A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
@@ -210,17 +214,16 @@ for p = 1:length(tau)
             A_4_m_2=kron(A4_2, eye(dim)) - kron(eye(dim), A4_2');
             A_5_m_2=kron(A5_2, eye(dim)) - kron(eye(dim), A5_2');
             % correlation constant
-            r_1 = eval(['r' num2str(i) num2str(j)]);
-            r_2 = eval(['r' num2str(k) num2str(m)]);
-            phi = eval(['phi_' num2str(i) num2str(j) num2str(k) num2str(m)]);  
+            r_1 = r_1_mas(idx);
+            r_2 = r_2_mas(idx);
+            phi = phi_mas(idx);  
             if (i==2)&&(j==1)&&(k==1)&&(m==3)
-                NN_switch=1;
-                disp('switch');
+                NN_switch=1;                
             end            
             if (NN_switch==0)
-                const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2*3);
+                const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
             else
-                const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/ (r_1^3*r_2*3);
+                const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
             end
             % Вклад в релаксационный оператор
             Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
@@ -233,8 +236,7 @@ for p = 1:length(tau)
             Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
             Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
             Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;
-            
+            Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
         end
         % Оператор эволюции
         diff_M = -1i*U*lam*i_U+Rrf;        
@@ -262,7 +264,7 @@ for p = 1:length(tau)
     %сохранение в файл
     to_print=[B; real(ttau_S ./ tau_S)'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-    fileID = fopen(['data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+    fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
     fprintf(fileID,'%6.4f %4.4f\r\n',to_print);
     fclose(fileID);
 end
