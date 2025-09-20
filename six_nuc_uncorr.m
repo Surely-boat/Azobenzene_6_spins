@@ -42,8 +42,8 @@ J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
 J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 % Параметры расчёта
-NB = 1;
-B = linspace(5, 5, NB);
+NB = 50;
+B = linspace(-4, -2, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 % Константы для диполь-дипольного взаимодействия
@@ -178,8 +178,8 @@ for p = 1:length(tau)
     %сохранение в файл
     to_print=[B; real(ttau_S ./ tau_S)'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-    fileID = fopen(['data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
-    fprintf(fileID,'%6.4f %4.4f\r\n',to_print);
+    fileID = fopen(['data\data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+    fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
     fclose(fileID);
 end
 
