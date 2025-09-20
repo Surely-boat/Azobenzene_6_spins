@@ -178,7 +178,7 @@ for p = 1:length(tau)
     %сохранение в файл
     to_print=[B; real(ttau_S ./ tau_S)'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-    fileID = fopen(['data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+    fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
     fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
     fclose(fileID);
 end
