@@ -51,17 +51,17 @@ phi_2514=80.85*pi/180; phi_2614=pi;
 sigma3 = 8.494e-6; sigma4 = 8.373e-6; sigma5 = 8.494e-6; sigma6 = 8.373e-6;
 
 % Скалярные константы связи (Гц)
-J13 = 1.7 * 2 * pi; J14 = -0.4 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
+J13 = 1.67 * 2 * pi; J14 = -0.42 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
 J23 = -0.42 * 2 * pi; J24 = 1.67 * 2 * pi; J25 = 1.67 * 2 * pi; J26 = -0.42 * 2 * pi;
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
 J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 % Параметры расчёта
-NB = 15;
-B = linspace(-3, -2, NB);
+NB = 40;
+B = linspace(5, 6, NB);
 B = 1 * 10.^(B);
-tau = [9e-11]; 
+tau = [18e-11]; 
 % Константы для диполь-дипольного взаимодействия
 const_HH = 1e6 * g^4 * beta^4 / (h^2);
 const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
@@ -224,7 +224,7 @@ for p = 1:length(tau)
                 const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
             else
                 const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
-            end
+            end                    
             % Вклад в релаксационный оператор
             Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
             Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
@@ -243,7 +243,7 @@ for p = 1:length(tau)
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-5;
+        s = 1e-4;
         I0 = eye(dim^2);
         
         rv_s = (I0 * s - diff_M) \ rv0;
@@ -265,7 +265,7 @@ for p = 1:length(tau)
     to_print=[B; real(ttau_S ./ tau_S)'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
     fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
-    fprintf(fileID,'%6.4f %4.4f\r\n',to_print);
+    fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
     fclose(fileID);
 end
 
