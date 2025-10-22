@@ -78,6 +78,10 @@ NB = 1;
 B = linspace(5.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
+
+D_D_corr_flag=1;
+CSA_D_corr_flag=1;
+CSA_flag=1;
 % Константы для диполь-дипольного взаимодействия
 const_HH = 1e6 * g^4 * beta^4 / (h^2);
 const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
