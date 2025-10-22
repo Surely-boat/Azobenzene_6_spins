@@ -78,6 +78,10 @@ NB = 1;
 B = linspace(5, 5, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
+
+D_D_corr_flag=1;
+CSA_D_corr_flag=1;
+CSA_flag=1;
 % Константы для диполь-дипольного взаимодействия
 const_HH = 1e6 * g^4 * beta^4 / (h^2);
 const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
@@ -187,132 +191,137 @@ for p = 1:length(tau)
             Rrf = Rrf -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
         end 
         %CSA
-        Ap = Iup{1}+Iup{2};
-        Am = Idn{1}+Idn{2};
-        Az = Iz{1}+Iz{2};
-        Ap_m=kron(Ap, eye(dim)) - kron(eye(dim), Ap');
-        Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
-        Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
-        Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
-        Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
-        Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
-        % Учёт корреляции
-        angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
-            [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
-        [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
-        r_1_mas=[r13 r13 r14 r14 r25 r24 r24 r16 r13 r13 r13 r16 r16 r25 r26 r12 r12 r12 r12 r12 r12];
-        r_2_mas=[r14 r16 r16 r24 r26 r25 r26 r26 r24 r26 r25 r25 r24 r14 r14 r13 r14 r16 r25 r26 r24];
-        phi_mas=[phi_3114 phi_3116 phi_4116 phi_1442 phi_5226 phi_4225 phi_4226 phi_1662 phi_1324 phi_1326 phi_1325 phi_1625 ...
-            phi_1624 phi_2514 phi_2614 phi_2113 phi_2114 phi_2116 phi_1225 phi_1226 phi_1224];
-        i_idx=zeros(1, length(angles));
-        j_idx=zeros(1, length(angles));
-        k_idx=zeros(1, length(angles));
-        m_idx=zeros(1, length(angles));
-        for o=1:length(angles)
-            i_idx(o)=angles{o}(1);
-            j_idx(o)=angles{o}(2);
-            k_idx(o)=angles{o}(3);
-            m_idx(o)=angles{o}(4);
-        end
-        parfor idx = 1:length(angles)
-            i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-            NN_switch=0;
-            %first pair
-            A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
-            A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
-            A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
-            A4_1 = Iup{j}*Iup{i};
-            A5_1 = Idn{j}*Idn{i};
-            % dimentions
-            A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
-            A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
-            A_dn_m_1=kron(A_dn_1, eye(dim)) - kron(eye(dim), A_dn_1');
-            A_4_m_1=kron(A4_1, eye(dim)) - kron(eye(dim), A4_1');
-            A_5_m_1=kron(A5_1, eye(dim)) - kron(eye(dim), A5_1');
-            %second pair
-            A_cs2_2 = Iup{m}*Idn{k}+Idn{m}*Iup{k}-4*Iz{m}*Iz{k};
-            A_up_2 = Iz{m}*Iup{k}+Iup{m}*Iz{k};
-            A_dn_2 = Iz{m}*Idn{k}+Idn{m}*Iz{k};
-            A4_2 = Iup{m}*Iup{k};
-            A5_2 = Idn{m}*Idn{k};
-            % dimentions
-            A_cs2_m_2=kron(A_cs2_2, eye(dim)) - kron(eye(dim), A_cs2_2');
-            A_up_m_2=kron(A_up_2, eye(dim)) - kron(eye(dim), A_up_2');
-            A_dn_m_2=kron(A_dn_2, eye(dim)) - kron(eye(dim), A_dn_2');
-            A_4_m_2=kron(A4_2, eye(dim)) - kron(eye(dim), A4_2');
-            A_5_m_2=kron(A5_2, eye(dim)) - kron(eye(dim), A5_2');
-            % correlation constant
-            r_1 = r_1_mas(idx);
-            r_2 = r_2_mas(idx);
-            phi = phi_mas(idx);                         
-            if (idx<16)
-                const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
-            else
-                const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
-            end
-            % Вклад в релаксационный оператор
-            Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
-            
-            Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
-        end
-        %CSA corr
-        angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
-        r_mas=[r12 r13 r14 r16 r24 r25 r26];        
-        phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
-        i_idx=zeros(1, length(angles));
-        j_idx=zeros(1, length(angles));        
-        for o=1:length(angles)
-            i_idx(o)=angles{o}(1);
-            j_idx(o)=angles{o}(2);            
-        end
-        parfor idx = 1:length(angles)
-            i = i_idx(idx);  j = j_idx(idx);                    
-            %dipole
-            A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
-            A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
-            A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
-            A4_1 = Iup{j}*Iup{i};
-            A5_1 = Idn{j}*Idn{i};
-            % dimentions
-            A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
-            A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
-            A_dn_m_1=kron(A_dn_1, eye(dim)) - kron(eye(dim), A_dn_1');
-            A_4_m_1=kron(A4_1, eye(dim)) - kron(eye(dim), A4_1');
-            A_5_m_1=kron(A5_1, eye(dim)) - kron(eye(dim), A5_1');
-            %CSA
+        if (CSA_flag==1)
             Ap = Iup{1}+Iup{2};
             Am = Idn{1}+Idn{2};
             Az = Iz{1}+Iz{2};
             Ap_m=kron(Ap, eye(dim)) - kron(eye(dim), Ap');
             Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
             Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
-            % correlation constant
-            r = r_mas(idx);            
-            phi = phi_mas(idx); 
-            sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
-                        
-            if (idx<2)
-                const_rel=sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
-            else
-                const_rel=sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
+            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
+            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
+            Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+        end
+        % Учёт корреляции диполь-диполей
+        if (D_D_corr_flag==1)
+            angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
+                [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
+            [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
+            r_1_mas=[r13 r13 r14 r14 r25 r24 r24 r16 r13 r13 r13 r16 r16 r25 r26 r12 r12 r12 r12 r12 r12];
+            r_2_mas=[r14 r16 r16 r24 r26 r25 r26 r26 r24 r26 r25 r25 r24 r14 r14 r13 r14 r16 r25 r26 r24];
+            phi_mas=[phi_3114 phi_3116 phi_4116 phi_1442 phi_5226 phi_4225 phi_4226 phi_1662 phi_1324 phi_1326 phi_1325 phi_1625 ...
+                phi_1624 phi_2514 phi_2614 phi_2113 phi_2114 phi_2116 phi_1225 phi_1226 phi_1224];
+            i_idx=zeros(1, length(angles));
+            j_idx=zeros(1, length(angles));
+            k_idx=zeros(1, length(angles));
+            m_idx=zeros(1, length(angles));
+            for o=1:length(angles)
+                i_idx(o)=angles{o}(1);
+                j_idx(o)=angles{o}(2);
+                k_idx(o)=angles{o}(3);
+                m_idx(o)=angles{o}(4);
             end
-            % Вклад в релаксационный оператор
-            Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
-            
-            
-            Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
+            parfor idx = 1:length(angles)
+                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
+                NN_switch=0;
+                %first pair
+                A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
+                A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
+                A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
+                A4_1 = Iup{j}*Iup{i};
+                A5_1 = Idn{j}*Idn{i};
+                % dimentions
+                A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
+                A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
+                A_dn_m_1=kron(A_dn_1, eye(dim)) - kron(eye(dim), A_dn_1');
+                A_4_m_1=kron(A4_1, eye(dim)) - kron(eye(dim), A4_1');
+                A_5_m_1=kron(A5_1, eye(dim)) - kron(eye(dim), A5_1');
+                %second pair
+                A_cs2_2 = Iup{m}*Idn{k}+Idn{m}*Iup{k}-4*Iz{m}*Iz{k};
+                A_up_2 = Iz{m}*Iup{k}+Iup{m}*Iz{k};
+                A_dn_2 = Iz{m}*Idn{k}+Idn{m}*Iz{k};
+                A4_2 = Iup{m}*Iup{k};
+                A5_2 = Idn{m}*Idn{k};
+                % dimentions
+                A_cs2_m_2=kron(A_cs2_2, eye(dim)) - kron(eye(dim), A_cs2_2');
+                A_up_m_2=kron(A_up_2, eye(dim)) - kron(eye(dim), A_up_2');
+                A_dn_m_2=kron(A_dn_2, eye(dim)) - kron(eye(dim), A_dn_2');
+                A_4_m_2=kron(A4_2, eye(dim)) - kron(eye(dim), A4_2');
+                A_5_m_2=kron(A5_2, eye(dim)) - kron(eye(dim), A5_2');
+                % correlation constant
+                r_1 = r_1_mas(idx);
+                r_2 = r_2_mas(idx);
+                phi = phi_mas(idx);                         
+                if (idx<16)
+                    const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
+                else
+                    const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
+                end
+                % Вклад в релаксационный оператор
+                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
+
+                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
+            end
+        end
+        %CSA corr
+        if (CSA_D_corr_flag==1)
+            angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
+            r_mas=[r12 r13 r14 r16 r24 r25 r26];        
+            phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
+            i_idx=zeros(1, length(angles));
+            j_idx=zeros(1, length(angles));        
+            for o=1:length(angles)
+                i_idx(o)=angles{o}(1);
+                j_idx(o)=angles{o}(2);            
+            end
+            parfor idx = 1:length(angles)
+                i = i_idx(idx);  j = j_idx(idx);                    
+                %dipole
+                A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
+                A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
+                A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
+                A4_1 = Iup{j}*Iup{i};
+                A5_1 = Idn{j}*Idn{i};
+                % dimentions
+                A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
+                A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
+                A_dn_m_1=kron(A_dn_1, eye(dim)) - kron(eye(dim), A_dn_1');
+                A_4_m_1=kron(A4_1, eye(dim)) - kron(eye(dim), A4_1');
+                A_5_m_1=kron(A5_1, eye(dim)) - kron(eye(dim), A5_1');
+                %CSA
+                Ap = Iup{1}+Iup{2};
+                Am = Idn{1}+Idn{2};
+                Az = Iz{1}+Iz{2};
+                Ap_m=kron(Ap, eye(dim)) - kron(eye(dim), Ap');
+                Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
+                Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
+                % correlation constant
+                r = r_mas(idx);            
+                phi = phi_mas(idx); 
+                sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
+
+                if (idx<2)
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
+                else
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
+                end
+                % Вклад в релаксационный оператор
+                Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
+
+                Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
+            end
         end
         % Оператор эволюции
         diff_M = -1i*U*lam*i_U+Rrf;        
