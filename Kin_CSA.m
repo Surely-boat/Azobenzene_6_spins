@@ -51,7 +51,7 @@ phi_2514=80.85*pi/180; phi_2614=pi;
 sigma3 = 8.494e-6; sigma4 = 8.373e-6; sigma5 = 8.494e-6; sigma6 = 8.373e-6;
 
 % Скалярные константы связи (Гц)
-J13 = 1.67 * 2 * pi; J14 = -0.4 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
+J13 = 1.67 * 2 * pi; J14 = -0.42 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
 J23 = -0.42 * 2 * pi; J24 = 1.67 * 2 * pi; J25 = 1.67 * 2 * pi; J26 = -0.42 * 2 * pi;
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
@@ -74,8 +74,8 @@ phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 
 % Параметры расчёта
-NB = 40;
-B = linspace(3, 6, NB);
+NB = 1;
+B = linspace(5.4, 5.4, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 % Константы для диполь-дипольного взаимодействия
@@ -214,10 +214,9 @@ for p = 1:length(tau)
             k_idx(o)=angles{o}(3);
             m_idx(o)=angles{o}(4);
         end
-
-        for idx = 1:length(angles)
+        parfor idx = 1:length(angles)
             i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-            
+            NN_switch=0;
             %first pair
             A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
             A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -245,8 +244,11 @@ for p = 1:length(tau)
             % correlation constant
             r_1 = r_1_mas(idx);
             r_2 = r_2_mas(idx);
-            phi = phi_mas(idx);                         
-            if (idx<16)
+            phi = phi_mas(idx);  
+            if (i==2)&&(j==1)&&(k==1)&&(m==3)
+                NN_switch=1;                
+            end            
+            if (NN_switch==0)
                 const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
             else
                 const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
@@ -266,7 +268,7 @@ for p = 1:length(tau)
         end
         %CSA corr
         angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
-        CSA_r_mas=[r12 r13 r14 r16 r24 r25 r26];        
+        r_mas=[r12 r13 r14 r16 r24 r25 r26];        
         phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
         i_idx=zeros(1, length(angles));
         j_idx=zeros(1, length(angles));        
@@ -275,7 +277,8 @@ for p = 1:length(tau)
             j_idx(o)=angles{o}(2);            
         end
         parfor idx = 1:length(angles)
-            i = i_idx(idx);  j = j_idx(idx);                      
+            i = i_idx(idx);  j = j_idx(idx);          
+            NN_switch=0;
             %dipole
             A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
             A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -296,16 +299,17 @@ for p = 1:length(tau)
             Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
             Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
             % correlation constant
-            r = CSA_r_mas(idx);            
+            r = r_mas(idx);            
             phi = phi_mas(idx); 
-            sigma_corr=-(2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi)));
-            %lобавил минус из-за минуса в диполь-дипольных слагаемых            
-            if (idx<2)
+            sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
+            if (i==1)&&(j==3)
+                NN_switch=1;                
+            end            
+            if (NN_switch==0)
                 const_rel=sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
             else
                 const_rel=sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
             end
-            %const_rel=0;
             % Вклад в релаксационный оператор
             Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
             Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
@@ -335,22 +339,37 @@ for p = 1:length(tau)
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
         disp(l);
     end
-    disp(ttau_S ./ tau_S);
-    % Визуализация результатов
-    hold on;
-    plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
-    %сохранение в файл
-    to_print=[B; real(ttau_S ./ tau_S)'];
-    timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-    fileID = fopen(['data/CSA_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
-    fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
-    fclose(fileID);
+    disp(ttau_S ./ tau_S);        
 end
-
+%расчёт кинетики
+dt = 1; %с
+Nt = 400;
+exp_M = exp(diff_M*dt);
+inv_M=inv(I0-dt*diff_M);
+kin = zeros(1, Nt);
+t_mas=zeros(1, Nt);
+rv0 = reshape(ro0, [dim^2, 1]);
+for w=1:Nt
+    rho = reshape(rv0, [dim, dim]);
+    kin(w)=(4/3)*(trace(PS * rho)-1/4);
+    kin(w)=trace(PS * rho);
+    %rv0=exp_M*rv0;
+    rv0=inv_M*rv0;
+    t_mas(w)=(w-1)*dt;
+end
+plot(t_mas, kin, 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns;' 'B_0 = ' num2str(log(B(1))/log(10), 2)], 'LineWidth', 2);
 xlabel('Магнитное поле, Гс');
 ylabel('\tau_S, с');
 title('Время жизни синглетного состояния с дополнительными ядрами');
 legend;
 grid on;
-set(gca, 'XScale', 'log');
-%set(gca, 'YScale', 'log');
+%set(gca, 'XScale', 'log');
+set(gca, 'YScale', 'log');
+%сохранение в файл
+to_print=[t_mas; kin];
+timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
+fileID = fopen(['data/kin_CSA_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
+fprintf(fileID,'%6.6f %1.10f\r\n',to_print);
+fclose(fileID);
+
