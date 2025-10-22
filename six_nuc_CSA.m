@@ -182,7 +182,11 @@ for p = 1:length(tau)
                 else
                     const_rel=const_HH/r_ij^6;                    
                 end
-            end            
+            end
+            disp(idx);
+            disp(i);
+            disp(j);
+            disp(const_rel);
             % Вклад в релаксационный оператор            
             Rrf = Rrf -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
             Rrf = Rrf -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;

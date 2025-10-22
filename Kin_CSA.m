@@ -258,12 +258,7 @@ for p = 1:length(tau)
                     const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
                 else
                     const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
-                end
-                disp(i);
-                disp(j);
-                disp(k);
-                disp(m);
-                disp(const_rel);
+                end                
                 % Вклад в релаксационный оператор
                 Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
                 Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
@@ -319,10 +314,7 @@ for p = 1:length(tau)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
                 else
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
-                end
-                disp(i);
-                disp(j);                
-                disp(const_rel);
+                end                
                 % Вклад в релаксационный оператор
                 Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
                 Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
@@ -387,7 +379,7 @@ set(gca, 'XScale', 'log');
 %сохранение в файл
 %singlet
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_S' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
@@ -395,7 +387,7 @@ end
 fclose(fileID);
 %T_p
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_p' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_p_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_p(i));
@@ -404,7 +396,7 @@ fclose(fileID);
 %set(gca, 'YScale', 'log');
 %T_0
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_0' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_0_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_0(i));
@@ -412,7 +404,7 @@ end
 fclose(fileID);
 %T_m
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_m' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_m_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_m(i));
