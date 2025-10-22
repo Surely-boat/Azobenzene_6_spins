@@ -225,8 +225,7 @@ for p = 1:length(tau)
                 m_idx(o)=angles{o}(4);
             end
             parfor idx = 1:length(angles)
-                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-                NN_switch=0;
+                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);                          
                 %first pair
                 A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
                 A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -359,11 +358,11 @@ end
 dt = 1; %с
 Nt = 100;
 exp_M = expm(diff_M*dt);
-kin_S = zeros(Nt);
-kin_T_p = zeros(Nt);
-kin_T_0 = zeros(Nt);
-kin_T_m = zeros(Nt);
-t_mas=zeros(Nt);
+kin_S = zeros(Nt, 1);
+kin_T_p = zeros(Nt, 1);
+kin_T_0 = zeros(Nt, 1);
+kin_T_m = zeros(Nt, 1);
+t_mas=zeros(Nt, 1);
 rv0 = reshape(ro0, [dim^2, 1]);
 for w=1:Nt
     rho = reshape(rv0, [dim, dim]);
@@ -378,7 +377,7 @@ for w=1:Nt
     rv0=exp_M*rv0;
     t_mas(w)=(w-1)*dt;
 end
-plot(t_mas, kin, 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns;' 'B_0 = ' num2str(log(B(1))/log(10), 2)], 'LineWidth', 2);
+plot(t_mas, kin_S, 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns;' 'B_0 = ' num2str(log(B(1))/log(10), 2)], 'LineWidth', 2);
 xlabel('Магнитное поле, Гс');
 ylabel('\tau_S, с');
 title('Время жизни синглетного состояния с дополнительными ядрами');
@@ -387,31 +386,35 @@ grid on;
 set(gca, 'XScale', 'log');
 %сохранение в файл
 %singlet
-to_print=[t_mas; kin_S];
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
 fileID = fopen(['data/kin_CSA_S' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
-fprintf(fileID,'%6.6f %1.10f\r\n',to_print);
+for i = 1:Nt
+    fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
+end
 fclose(fileID);
 %T_p
-to_print=[t_mas; kin_T_p];
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
 fileID = fopen(['data/kin_CSA_T_p' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
-fprintf(fileID,'%6.6f %1.10f\r\n',to_print);
+for i = 1:Nt
+    fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_p(i));
+end
 fclose(fileID);
 %set(gca, 'YScale', 'log');
 %T_0
-to_print=[t_mas; kin_T_0];
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
 fileID = fopen(['data/kin_CSA_T_0' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
-fprintf(fileID,'%6.6f %1.10f\r\n',to_print);
+for i = 1:Nt
+    fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_0(i));
+end
 fclose(fileID);
 %T_m
-to_print=[t_mas; kin_T_m];
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
 fileID = fopen(['data/kin_CSA_T_m' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
-fprintf(fileID,'%6.6f %1.10f\r\n',to_print);
+for i = 1:Nt
+    fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_m(i));
+end
 fclose(fileID);
