@@ -306,7 +306,7 @@ for p = 1:length(tau)
                 Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
                 Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
                 % correlation constant
-                r = r_mas(idx);            
+                r = r_CSA_mas(idx);            
                 phi = phi_mas(idx); 
                 sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
 
