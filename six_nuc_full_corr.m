@@ -187,8 +187,7 @@ for p = 1:length(tau)
             m_idx(o)=angles{o}(4);
         end
         parfor idx = 1:length(angles)
-            i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-            NN_switch=0;
+            i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);                      
             %first pair
             A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
             A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -216,11 +215,8 @@ for p = 1:length(tau)
             % correlation constant
             r_1 = r_1_mas(idx);
             r_2 = r_2_mas(idx);
-            phi = phi_mas(idx);  
-            if (i==2)&&(j==1)&&(k==1)&&(m==3)
-                NN_switch=1;                
-            end            
-            if (NN_switch==0)
+            phi = phi_mas(idx);                          
+            if (idx<16)
                 const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
             else
                 const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
