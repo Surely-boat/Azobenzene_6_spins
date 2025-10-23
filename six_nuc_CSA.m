@@ -278,7 +278,7 @@ for p = 1:length(tau)
         %CSA corr
         if (CSA_D_corr_flag==1)
             angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
-            r_mas=[r12 r13 r14 r16 r24 r25 r26];        
+            r_CSA_mas=[r12 r13 r14 r16 r24 r25 r26];        
             phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
             i_idx=zeros(1, length(angles));
             j_idx=zeros(1, length(angles));        
@@ -308,7 +308,7 @@ for p = 1:length(tau)
                 Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
                 Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
                 % correlation constant
-                r = r_mas(idx);            
+                r = r_CSA_mas(idx);            
                 phi = phi_mas(idx); 
                 sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
 
