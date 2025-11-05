@@ -68,7 +68,7 @@ phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
 NB = 1;
-B = linspace(5, 5, NB);
+B = linspace(4.921, 4.921, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 
@@ -134,6 +134,10 @@ for p = 1:length(tau)
         i_U = inv(U);        
         % Релаксационный оператор Редфилда
         Rrf = zeros(dim^2, dim^2);
+        Rrf_D_D = zeros(dim^2, dim^2);
+        Rrf_CSA = zeros(dim^2, dim^2);
+        Rrf_D_D_corr = zeros(dim^2, dim^2);
+        Rrf_CSA_D_D_corr = zeros(dim^2, dim^2);
         % Спектральная плотность            
         Jlam=zeros(dim^2, dim^2);
         for k1 = 1:dim^2
@@ -178,11 +182,11 @@ for p = 1:length(tau)
                 end
             end            
             % Вклад в релаксационный оператор            
-            Rrf = Rrf -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
         end 
         %% CSA
         if (CSA_flag==1)
@@ -197,9 +201,9 @@ for p = 1:length(tau)
             sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
             const_CSA=1e3*gn*beta/h;
             %вклад в релаксационный оператор
-            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
-            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
-            Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
         end
         %% Учёт корреляции диполь-диполей
         if (D_D_corr_flag==1)
@@ -250,24 +254,27 @@ for p = 1:length(tau)
                 % correlation constant
                 r_1 = r_1_mas(idx);
                 r_2 = r_2_mas(idx);
-                phi = phi_mas(idx);                         
+                phi = phi_mas(idx);   
+                const_HH = 1e6 * g^4 * beta^4 / (h^2);
+                const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
+                const_NN = 1e6 * gn^4 * beta^4 / (h^2);
                 if (idx<16)
                     const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);                    
                 else
                     const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);                    
                 end                
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
 
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
             end
         end
         %% CSA corr
@@ -317,39 +324,46 @@ for p = 1:length(tau)
                 disp(j);
                 disp(const_rel);
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
 
-                Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
-        end
-        %% Оператор эволюции и среднее время жизни синглета
-        diff_M = -1i*U*lam*i_U+Rrf;        
-        % Преобразование начальной матрицы плотности
-        rv0 = reshape(ro0, [dim^2, 1]);        
-        % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-5;
-        I0 = eye(dim^2);
-        
-        rv_s = (I0 * s - diff_M) \ rv0;
-        rho_s = reshape(rv_s, [dim, dim]);
-        prob_S_s = trace(PS * rho_s);
-        tau_S(l) = prob_S_s - 1/(4 * s);
-        
-        rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
-        rho_s = reshape(rv_s, [dim, dim]);
-        prob_S_s = trace(PS * rho_s);
-        ttau_S(l) = prob_S_s - 1/(4 * s^2);
-        disp(l);
+        end        
     end             
 end
+%% Оператор эволюции и среднее время жизни синглета
+Rrf = Rrf_D_D;
+%Rrf = Rrf_D_D+Rrf_CSA;
+%Rrf = Rrf_D_D+Rrf_D_D_corr;
+%Rrf = Rrf_D_D+Rrf_CSA_D_D_corr;
+%Rrf = Rrf_D_D+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
+%Rrf = Rrf_D_D+Rrf_CSA+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
 
+diff_M = -1i*U*lam*i_U+Rrf;  
+%% Вычисление среднего времени жизни
+% Преобразование начальной матрицы плотности
+rv0 = reshape(ro0, [dim^2, 1]);        
+% Вычисление времени жизни через преобразование Лапласа
+s = 1e-5;
+I0 = eye(dim^2);
+
+rv_s = (I0 * s - diff_M) \ rv0;
+rho_s = reshape(rv_s, [dim, dim]);
+prob_S_s = trace(PS * rho_s);
+tau_S(l) = prob_S_s - 1/(4 * s);
+
+rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
+rho_s = reshape(rv_s, [dim, dim]);
+prob_S_s = trace(PS * rho_s);
+ttau_S(l) = prob_S_s - 1/(4 * s^2);
+disp(ttau_S ./ tau_S);
 %% расчёт кинетики
-dt = 1; %с
-Nt = 100;
+dt = 0.1; %с
+Nt = 4000;
 exp_M = expm(diff_M*dt);
 kin_S = zeros(Nt, 1);
 kin_T_p = zeros(Nt, 1);

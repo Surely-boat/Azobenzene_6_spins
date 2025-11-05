@@ -131,7 +131,7 @@ for p = 1:length(tau)
         [V, D] = eig(H_total);        
         lam = kron(D, eye(dim)) - kron(eye(dim), conj(D));
         U = kron(V, conj(V));
-        i_U = inv(U);        
+        i_U = inv(U);                
         % Релаксационный оператор Редфилда
         Rrf = zeros(dim^2, dim^2);
         % Спектральная плотность            
