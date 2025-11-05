@@ -187,7 +187,8 @@ for p = 1:length(tau)
             Rrf_D_D = Rrf_D_D -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
             Rrf_D_D = Rrf_D_D -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
             Rrf_D_D = Rrf_D_D -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
-        end 
+        end
+        disp('D-D done');
         %% CSA
         if (CSA_flag==1)
             % операторы
@@ -204,6 +205,7 @@ for p = 1:length(tau)
             Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
             Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
             Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+            disp('CSA done');
         end
         %% Учёт корреляции диполь-диполей
         if (D_D_corr_flag==1)
@@ -225,8 +227,7 @@ for p = 1:length(tau)
                 m_idx(o)=angles{o}(4);
             end
             parfor idx = 1:length(angles)
-                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-                NN_switch=0;
+                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);                     
                 %first pair
                 A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
                 A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -276,6 +277,7 @@ for p = 1:length(tau)
                 Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
                 Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
             end
+            disp('D-D corr done');
         end
         %% CSA corr
         if (CSA_D_corr_flag==1)
@@ -332,6 +334,7 @@ for p = 1:length(tau)
                 Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
                 Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
+            disp('D-D x CSA corr done');
         end        
     end             
 end
@@ -394,7 +397,7 @@ set(gca, 'XScale', 'log');
 %% сохранение в файл
 %singlet
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
@@ -402,7 +405,7 @@ end
 fclose(fileID);
 %T_p
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_p_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_p_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_p(i));
@@ -411,7 +414,7 @@ fclose(fileID);
 %set(gca, 'YScale', 'log');
 %T_0
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_0_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_0_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_0(i));
@@ -419,7 +422,7 @@ end
 fclose(fileID);
 %T_m
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_m_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_m_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_m(i));
