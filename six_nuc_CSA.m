@@ -221,8 +221,7 @@ for p = 1:length(tau)
                 m_idx(o)=angles{o}(4);
             end
             parfor idx = 1:length(angles)
-                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);           
-                NN_switch=0;
+                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);                         
                 %first pair
                 A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
                 A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
@@ -312,10 +311,7 @@ for p = 1:length(tau)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);                    
                 else
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);                    
-                end
-                disp(i);
-                disp(j);
-                disp(const_rel);
+                end                
                 % Вклад в релаксационный оператор
                 Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
                 Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;

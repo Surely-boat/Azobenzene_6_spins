@@ -68,7 +68,7 @@ phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
 NB = 1;
-B = linspace(4.921, 4.921, NB);
+B = linspace(-2.471, -2.471, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 
@@ -321,10 +321,7 @@ for p = 1:length(tau)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);                    
                 else
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);                    
-                end
-                disp(i);
-                disp(j);
-                disp(const_rel);
+                end                
                 % Вклад в релаксационный оператор
                 Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
                 Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
@@ -339,14 +336,19 @@ for p = 1:length(tau)
     end             
 end
 %% Оператор эволюции и среднее время жизни синглета
-Rrf = Rrf_D_D;
+%Rrf = Rrf_D_D;
 %Rrf = Rrf_D_D+Rrf_CSA;
 %Rrf = Rrf_D_D+Rrf_D_D_corr;
 %Rrf = Rrf_D_D+Rrf_CSA_D_D_corr;
 %Rrf = Rrf_D_D+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
-%Rrf = Rrf_D_D+Rrf_CSA+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
+Rrf = Rrf_D_D+Rrf_CSA+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
+%Rrf = Rrf_CSA_D_D_corr;
+%Rrf = Rrf_D_D_corr;
+%Rrf = Rrf_CSA;
 
-diff_M = -1i*U*lam*i_U+Rrf;  
+diff_M = -1i*U*lam*i_U+Rrf; 
+%diff_M = -1i*U*lam*i_U;
+%diff_M = -1i*(kron(H_total, eye(dim)) - kron(eye(dim), conj(H_total)));
 %% Вычисление среднего времени жизни
 % Преобразование начальной матрицы плотности
 rv0 = reshape(ro0, [dim^2, 1]);        
@@ -365,8 +367,8 @@ prob_S_s = trace(PS * rho_s);
 ttau_S(l) = prob_S_s - 1/(4 * s^2);
 disp(ttau_S ./ tau_S);
 %% расчёт кинетики
-dt = 0.1; %с
-Nt = 4000;
+dt = 0.01; %с
+Nt = 10000;
 exp_M = expm(diff_M*dt);
 kin_S = zeros(Nt, 1);
 kin_T_p = zeros(Nt, 1);
