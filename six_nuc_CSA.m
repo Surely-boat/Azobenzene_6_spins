@@ -74,18 +74,22 @@ phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 
 % Параметры расчёта
-NB = 20;
-B = linspace(4.7, 5, NB);
+NB = 50;
+B = linspace(3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 
 D_D_corr_flag=1;
 CSA_D_corr_flag=1;
-CSA_flag=0;
+CSA_flag=1;
 % Константы для диполь-дипольного взаимодействия
 const_HH = 1e6 * g^4 * beta^4 / (h^2);
 const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
 const_NN = 1e6 * gn^4 * beta^4 / (h^2);
+
+const_HH = 1e4 * g^4 * beta^4 / (h^2);
+const_HN = 1e4 * g^2*gn^2 * beta^4 / (h^2);
+const_NN = 1e4 * gn^4 * beta^4 / (h^2);
 const_CSA=1e3*gn*beta/h;
 sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
 
@@ -310,8 +314,10 @@ for p = 1:length(tau)
             %lобавил минус из-за минуса в диполь-дипольных слагаемых            
                 if (idx<2)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e2 *gn^2 * beta^2 / (h*r^3);
                 else
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e2 *gn*g * beta^2 / (h*r^3);
                 end
                 % Вклад в релаксационный оператор
                 Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
