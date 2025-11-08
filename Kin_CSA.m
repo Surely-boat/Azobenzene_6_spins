@@ -1,6 +1,6 @@
 clear;
 % Всё считаем в герцах
-% Константы
+%% Константы
 beta = 5.05; % 1e-24
 g = 5.585;
 gn=-0.567;
@@ -9,6 +9,7 @@ h = 1.054; % 1e-27
 % Количество спинов
 n_spins = 6;
 dim = 2^n_spins;
+%% Параметры молекулы азобензола
 
 % Параметры основной пары
 sigma1 = 509.94e-6;
@@ -20,12 +21,6 @@ dJ12 = 0; % Гц
 
 % Параметры дополнительных ядер
 % Расстояния до основной пары (в Å)
-all_pairs = nchoosek(1:n_spins, 2);
-n_pairs = size(all_pairs, 1);
-
-pairs = {[1, 2],[1,3], [1,4], [1,5], [1,6], [2,3], [2,4], [2,5], [2,6], ...
-                 [3,4], [3,5], [3,6], [4,5], [4,6], [5,6]};
-
 r13 = 2.539; r14 = 2.470; r15 = 3.779; r16 = 2.734;
 r23 = 3.779; r24 = 2.734; r25 = 2.539; r26 = 2.470;
 r34 = 3.813; r35 = 6.317; r36 = 4.267;
@@ -63,7 +58,7 @@ sigmaYY=-146e-6;
 sigmaZZ=136e-6;
 psi=-37*pi/180;
 phi_12=0;
-% отразид рисунок в ворде, чтобы была картинка, как в авогадро
+% отразил рисунок в ворде, чтобы была картинка, как в авогадро
 phi_13=-7*pi/180;
 phi_16=-114.9*pi/180;
 phi_14=92.2*pi/180;
@@ -73,23 +68,16 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 
-% Параметры расчёта
+%% Параметры расчёта
 NB = 1;
-B = linspace(5.4, 5.4, NB);
+B = linspace(-2.471, -2.471, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 
 D_D_corr_flag=1;
 CSA_D_corr_flag=1;
 CSA_flag=1;
-% Константы для диполь-дипольного взаимодействия
-const_HH = 1e6 * g^4 * beta^4 / (h^2);
-const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
-const_NN = 1e6 * gn^4 * beta^4 / (h^2);
-const_CSA=1e3*gn*beta/h;
-sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
-
-% Создание операторов для каждого спина
+%% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
 for i=1:n_spins  
     Iup{i}=kron(eye(2^(i-1)),kron(up,eye(2^(n_spins-i))));
@@ -98,7 +86,7 @@ for i=1:n_spins
 %     Ii{i}=Ix{i}+1i*Iy{i};
 %     Id{i}=Ix{i}-1i*Iy{i};
 end
-% Начальная плотность матрицы (только первая пара в синглете)
+% Начальная матрица плотности (только первая пара в синглете)
 alpha=[1 0; 0 0];
 bita=[0 0; 0 1];
 equil = [1 0; 0 1]/2;
@@ -109,27 +97,27 @@ singlet=[0 0 0 0;
 
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
 % Проектор на синглетное состояние первых двух спинов
-PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
+PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
 PT_p = (eye(dim, dim)+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
 PT_0 = (eye(dim, dim)-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
 PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
-% Основной цикл по времени корреляции
+%% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
     tau_S = zeros(NB, 1);
     ttau_S = zeros(NB, 1);
     
     for l = 1:NB
-        % Гамильтониан Зеемана
+        %% Гамильтониан Зеемана        
         H_zeeman = zeros(dim, dim);
         H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma1) / h .* (Iz{1}+Iz{2});
         for k = 3:n_spins
             sigma_k = eval(['sigma' num2str(k)]);            
             H_zeeman = H_zeeman - 1e3 * g * beta * B(l) * (1 - sigma_k) / h .* Iz{k};
         end        
-        % Гамильтониан скалярного взаимодействия
+        %% Гамильтониан скалярного взаимодействия
         H_J = zeros(dim, dim);                
         
-        % Взаимодействия с дополнительными ядрами
+        % Все пары диполь-дипольного взаимодействия
         pairs = {[1, 2], [1,3], [1,4], [1,5], [1,6], [2,3], [2,4], [2,5], [2,6], ...
                  [3,4], [3,5], [3,6], [4,5], [4,6], [5,6]};
         
@@ -139,15 +127,19 @@ for p = 1:length(tau)
             H_J = H_J + J_val*(Iz{i}*Iz{j} + 0.5*(Iup{i}*Idn{j} + Idn{i}*Iup{j}));
         end
         
-        % Полный гамильтониан
+        %% Полный гамильтониан и диагонализация
         H_total = H_zeeman + H_J;        
         % Диагонализация
         [V, D] = eig(H_total);
         lam = kron(D, eye(dim)) - kron(eye(dim), conj(D));
         U = kron(V, conj(V));
-        i_U = kron(conj(inv(V)), inv(V));
+        i_U = inv(U);        
         % Релаксационный оператор Редфилда
         Rrf = zeros(dim^2, dim^2);
+        Rrf_D_D = zeros(dim^2, dim^2);
+        Rrf_CSA = zeros(dim^2, dim^2);
+        Rrf_D_D_corr = zeros(dim^2, dim^2);
+        Rrf_CSA_D_D_corr = zeros(dim^2, dim^2);
         % Спектральная плотность            
         Jlam=zeros(dim^2, dim^2);
         for k1 = 1:dim^2
@@ -156,7 +148,12 @@ for p = 1:length(tau)
                 Jlam(k1,k2)=1/(1/tau(p)+1i*(lam(k1,k1)-lam(k2,k2))); %0->inf 2xtimes slower
             end    
         end 
-        % Диполь-дипольные взаимодействия между всеми парами
+        %% Диполь-дипольные взаимодействия между всеми парами
+        % Константы для диполь-дипольного взаимодействия
+        const_HH = 1e6 * g^4 * beta^4 / (h^2);
+        const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
+        const_NN = 1e6 * gn^4 * beta^4 / (h^2);
+        
         all_pairs = nchoosek(1:n_spins, 2);    
         i_idx = all_pairs(:, 1);
         j_idx = all_pairs(:, 2);        
@@ -187,25 +184,32 @@ for p = 1:length(tau)
                 end
             end            
             % Вклад в релаксационный оператор            
-            Rrf = Rrf -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
-            Rrf = Rrf -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
+            Rrf_D_D = Rrf_D_D -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
         end         
-        %CSA
+        disp('D-D done');
+        %% CSA
         if (CSA_flag==1)
+            % операторы
             Ap = Iup{1}+Iup{2};
             Am = Idn{1}+Idn{2};
             Az = Iz{1}+Iz{2};
             Ap_m=kron(Ap, eye(dim)) - kron(eye(dim), Ap');
             Am_m=kron(Am, eye(dim)) - kron(eye(dim), Am');
             Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
-            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
-            Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
-            Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+            %константы
+            sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
+            const_CSA=1e3*gn*beta/h;
+            %вклад в релаксационный оператор
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+            disp('CSA done');
         end
-        % Учёт корреляции диполь-диполей
+        %% Учёт корреляции диполь-диполей
         if (D_D_corr_flag==1)
             angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
                 [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
@@ -253,30 +257,31 @@ for p = 1:length(tau)
                 % correlation constant
                 r_1 = r_1_mas(idx);
                 r_2 = r_2_mas(idx);
-                phi = phi_mas(idx);                         
-            if (i==2)&&(j==1)&&(k==1)&&(m==3)
-                NN_switch=1;                
-            end            
+                phi = phi_mas(idx);   
+                const_HH = 1e6 * g^4 * beta^4 / (h^2);
+                const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
+                const_NN = 1e6 * gn^4 * beta^4 / (h^2);
                 if (idx<16)
-                    const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);
+                    const_rel=(1+3*cos(2*phi))*const_HN/(r_1^3*r_2^3);                    
                 else
-                    const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);
+                    const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);                    
                 end                
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
 
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
+                Rrf_D_D_corr = Rrf_D_D_corr -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
             end
+            disp('D-D corr done');
         end
-        %CSA corr
+        %% CSA corr
         if (CSA_D_corr_flag==1)
             angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
             r_CSA_mas=[r12 r13 r14 r16 r24 r25 r26];        
@@ -311,51 +316,67 @@ for p = 1:length(tau)
                 % correlation constant
                 r = r_CSA_mas(idx);            
                 phi = phi_mas(idx); 
+                const_CSA=1e3*gn*beta/h;
                 sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
+
                 if (idx<2)
-                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);                    
                 else
-                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);
+                    const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);                    
                 end                
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
 
-                Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
+                Rrf_CSA_D_D_corr = Rrf_CSA_D_D_corr -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
+            disp('D-D x CSA corr done');
         end
-        % Оператор эволюции
-        diff_M = -1i*U*lam*i_U+Rrf;        
-        % Преобразование начальной матрицы плотности
-        rv0 = reshape(ro0, [dim^2, 1]);        
-        % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-5;
-        I0 = eye(dim^2);
-        
-        rv_s = (I0 * s - diff_M) \ rv0;
-        rho_s = reshape(rv_s, [dim, dim]);
-        prob_S_s = trace(PS * rho_s);
-        tau_S(l) = prob_S_s - 1/(4 * s);
-        
-        rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
-        rho_s = reshape(rv_s, [dim, dim]);
-        prob_S_s = trace(PS * rho_s);
-        ttau_S(l) = prob_S_s - 1/(4 * s^2);
-        disp(l);
-    end
-    disp(ttau_S ./ tau_S);        
+    end             
 end
-%расчёт кинетики
-dt = 1; %с
-Nt = 100;
+%% Оператор эволюции и среднее время жизни синглета
+%Rrf = Rrf_D_D;
+%Rrf = Rrf_D_D+Rrf_CSA;
+%Rrf = Rrf_D_D+Rrf_D_D_corr;
+%Rrf = Rrf_D_D+Rrf_CSA_D_D_corr;
+%Rrf = Rrf_D_D+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
+Rrf = Rrf_D_D+Rrf_CSA+Rrf_D_D_corr+Rrf_CSA_D_D_corr;
+%Rrf = Rrf_CSA_D_D_corr;
+%Rrf = Rrf_D_D_corr;
+%Rrf = Rrf_CSA;
+
+diff_M = -1i*U*lam*i_U+Rrf; 
+%diff_M = -1i*U*lam*i_U;
+%diff_M = -1i*(kron(H_total, eye(dim)) - kron(eye(dim), conj(H_total)));
+%% Вычисление среднего времени жизни
+% Преобразование начальной матрицы плотности
+rv0 = reshape(ro0, [dim^2, 1]);        
+% Вычисление времени жизни через преобразование Лапласа
+s = 1e-5;
+I0 = eye(dim^2);
+
+rv_s = (I0 * s - diff_M) \ rv0;
+rho_s = reshape(rv_s, [dim, dim]);
+prob_S_s = trace(PS * rho_s);
+tau_S(l) = prob_S_s - 1/(4 * s);
+
+rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
+rho_s = reshape(rv_s, [dim, dim]);
+prob_S_s = trace(PS * rho_s);
+ttau_S(l) = prob_S_s - 1/(4 * s^2);
+disp(ttau_S ./ tau_S);
+%% расчёт кинетики
+dt = 0.01; %с
+Nt = 10000;
 exp_M = expm(diff_M*dt);
-inv_M=inv(I0-dt*diff_M);
 kin_S = zeros(Nt, 1);
 kin_T_p = zeros(Nt, 1);
 kin_T_0 = zeros(Nt, 1);
+kin_T_m = zeros(Nt, 1);
+t_mas=zeros(Nt, 1);
 rv0 = reshape(ro0, [dim^2, 1]);
 for w=1:Nt
     rho = reshape(rv0, [dim, dim]);
@@ -368,7 +389,6 @@ for w=1:Nt
     kin_T_0(w)=trace(PT_0 * rho);
     kin_T_m(w)=trace(PT_m * rho);
     rv0=exp_M*rv0;
-    rv0=inv_M*rv0;
     t_mas(w)=(w-1)*dt;
 end
 plot(t_mas, kin_S, 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns;' 'B_0 = ' num2str(log(B(1))/log(10), 2)], 'LineWidth', 2);
@@ -377,12 +397,11 @@ ylabel('\tau_S, с');
 title('Время жизни синглетного состояния с дополнительными ядрами');
 legend;
 grid on;
-%set(gca, 'XScale', 'log');
-set(gca, 'YScale', 'log');
-%сохранение в файл
+set(gca, 'XScale', 'log');
+%% сохранение в файл
 %singlet
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
@@ -390,7 +409,7 @@ end
 fclose(fileID);
 %T_p
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_p_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_p_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_p(i));
@@ -399,7 +418,7 @@ fclose(fileID);
 %set(gca, 'YScale', 'log');
 %T_0
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_0_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_0_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_0(i));
@@ -407,10 +426,9 @@ end
 fclose(fileID);
 %T_m
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-fileID = fopen(['data/kin_CSA_T_m_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 2) '_' timestamp '.txt'],'w');
+fileID = fopen(['data/kin_CSA_T_m_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '_' timestamp '.txt'],'w');
 fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
 for i = 1:Nt
     fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_T_m(i));
 end
 fclose(fileID);
-
