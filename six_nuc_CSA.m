@@ -55,6 +55,9 @@ J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 sigmaXX=-789e-6;
 sigmaYY=-146e-6;
 sigmaZZ=136e-6;
+sigmaXX=-789e-5;
+sigmaYY=-146e-5;
+sigmaZZ=136e-5;
 psi=-37*pi/180;
 phi_12=0;
 % отразил рисунок в ворде, чтобы была картинка, как в авогадро
@@ -67,14 +70,14 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 50;
+NB = 30;
 B = linspace(4, 6, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 
 D_D_corr_flag=1;
-CSA_D_corr_flag=0;
-CSA_flag=0;
+CSA_D_corr_flag=1;
+CSA_flag=1;
 %% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
 for i=1:n_spins  
@@ -195,7 +198,7 @@ for p = 1:length(tau)
             Az_m=kron(Az, eye(dim)) - kron(eye(dim), Az');
             %константы
             sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
-            const_CSA=1e3*gn*beta/h;
+            const_CSA=1e3*gn*beta/h;            
             %вклад в релаксационный оператор
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
