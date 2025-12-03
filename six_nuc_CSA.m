@@ -19,7 +19,6 @@ sigma3 = 8.494e-6; sigma4 = 8.373e-6; sigma5 = 8.494e-6; sigma6 = 8.373e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 
 r12 = 1.248; % Å
-r21=r12;
 J12 = 16 * 2 * pi; % Гц переводим в цикл. частоту
 dJ12 = 0; % Гц
 
@@ -30,11 +29,6 @@ r23 = 3.779; r24 = 2.734; r25 = 2.539; r26 = 2.470;
 r34 = 3.813; r35 = 6.317; r36 = 4.267;
 r45 = 4.267; r46 = 5.060;
 r56 = 3.813;
-r31 = 2.539; r41 = 2.470; r51 = 3.779; r161 = 2.734;
-r32 = 3.779; r42 = 2.734; r52 = 2.539; r62 = 2.470;
-r43 = 3.813; r53 = 6.317; r63 = 4.267;
-r54 = 4.267; r64 = 5.060;
-r65 = 3.813;
 r_mas=[r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56];
 
 % Углы между связями HN-HN прилегающие
@@ -181,11 +175,11 @@ for p = 1:length(tau)
                     end
                 end            
                 % Вклад в релаксационный оператор            
-                Rrf_D_D = Rrf_D_D -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
-                Rrf_D_D = Rrf_D_D -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
-                Rrf_D_D = Rrf_D_D -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
-                Rrf_D_D = Rrf_D_D -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
-                Rrf_D_D = Rrf_D_D -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*0.05*A_cs2_m'*U*((U\A_cs2_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*0.3*A_up_m'*U*((U\A_up_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*0.3*A_dn_m'*U*((U\A_dn_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*0.3*A_4_m'*U*((U\A_4_m*U).*Jlam)*i_U;
+                Rrf = Rrf -const_rel*0.3*A_5_m'*U*((U\A_5_m*U).*Jlam)*i_U;
             end                      
         end 
         %% CSA
@@ -357,6 +351,7 @@ for p = 1:length(tau)
     fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
     fclose(fileID);
 end
+
 %% параметры графика
 xlabel('Магнитное поле, Гс');
 ylabel('\tau_S, с');
@@ -365,3 +360,4 @@ legend;
 grid on;
 set(gca, 'XScale', 'log');
 %set(gca, 'YScale', 'log');
+
