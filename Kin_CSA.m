@@ -10,6 +10,11 @@ n_spins = 6;
 dim = 2^n_spins;
 %% Параметры молекулы азобензола
 % Химические (ppm)
+sigmaXX=-789e-6;
+sigmaYY=-146e-6;
+sigmaZZ=136e-6;
+sigma1 = 509.94e-6;
+sigma2 = 509.94e-6;
 sigmaXX=-789e-5;
 sigmaYY=-146e-5;
 sigmaZZ=136e-5;
@@ -71,7 +76,7 @@ phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
 NB = 1;
-B = linspace(5, 5, NB);
+B = linspace(4.7, 4.7, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
 D_D_flag = 1;
@@ -206,9 +211,9 @@ for p = 1:length(tau)
             sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
             const_CSA=1e3*gn*beta/h;            
             %вклад в релаксационный оператор
-            Rrf = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
-            Rrf = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
-            Rrf = Rrf_CSA -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
+            Rrf_CSA = Rrf_CSA -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
             disp('CSA done');
         end
         %% Учёт корреляции диполь-диполей
@@ -344,15 +349,15 @@ PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужн�
 PT_p = (eye(dim, dim)+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
 PT_0 = (eye(dim, dim)-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
 PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
-PH_a = Iup{3};
+PH_a = (eye(dim, dim)+2*Iz{3})/2;
 % evolution operator
 Rrf=Rrf_D_D+Rrf_D_D_corr+Rrf_CSA+Rrf_CSA_D_corr;
 diff_M = -1i*(kron(H_total, eye(dim)) - kron(eye(dim), conj(H_total)))+Rrf;
 % Преобразование начальной матрицы плотности
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
-%ro0 = kron(triplet_0, kron(equil, kron(equil, kron(equil, equil))));
-%ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
-%ro0 = kron(singlet, kron(alpha, kron(bita, kron(bita, alpha))));
+ro0 = kron(singlet, kron(alpha, kron(alpha, kron(alpha, alpha))));
+ro0 = kron(singlet, kron(alpha, kron(bita, kron(bita, alpha))));
+ro0 = kron(singlet, kron(alpha, kron(bita, kron(bita, bita))));
 rv0 = reshape(ro0, [dim^2, 1]);        
 % Вычисление времени жизни через преобразование Лапласа
 s = 1e-4;
@@ -370,7 +375,7 @@ ttau_S(l) = prob_S_s - 1/(4 * s^2);
 disp(ttau_S ./ tau_S);
 %% расчёт кинетики
 dt = 0.1; %с
-Nt = 100;
+Nt = 1000;
 exp_M = expm(diff_M*dt);
 kin_S = zeros(Nt, 1);
 kin_T_p = zeros(Nt, 1);
