@@ -67,10 +67,11 @@ NB = 1;
 B = linspace(5, 5, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
-D_D_flag = 0;
-D_D_corr_flag=0;
-CSA_D_corr_flag=0;
+D_D_flag = 1;
+D_D_corr_flag=1;
+CSA_D_corr_flag=1;
 CSA_flag=1;
+T1_azo_flag=1;
 %% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
 for i=1:n_spins  
@@ -90,12 +91,18 @@ singlet=[0 0 0 0;
     0 0 0 0];
 
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
-ro0 = kron(singlet, kron(alpha, kron(alpha, kron(alpha, alpha))));
+%ro0 = kron(singlet, kron(alpha, kron(alpha, kron(alpha, alpha))));
+if (T1_azo_flag==1)
+    ro0 = kron(kron(alpha, alpha), kron(equil, kron(equil, kron(equil, equil))));
+end
 % Проектор на синглетное состояние первых двух спинов
 PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
 PT_p = (eye(dim, dim)+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
 PT_0 = (eye(dim, dim)-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
 PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
+if (T1_azo_flag==1)
+    PS = Iz{1}+Iz{2};
+end
 %% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
     tau_S = zeros(NB, 1);
@@ -303,7 +310,7 @@ for p = 1:length(tau)
                 r = r_CSA_mas(idx);            
                 phi = phi_mas(idx); 
                 const_CSA=1e3*gn*beta/h;
-                sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
+                sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi));
 
                 if (idx<2)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);                    
@@ -332,11 +339,17 @@ for p = 1:length(tau)
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         tau_S(l) = prob_S_s - 1/(4 * s);
+        if (T1_azo_flag==1)
+            tau_S(l) = prob_S_s;
+        end
         
         rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
+        if (T1_azo_flag==1)
+            ttau_S(l) = prob_S_s;
+        end
         disp(l);
     end
     %% Визуализация результатов и сохранение

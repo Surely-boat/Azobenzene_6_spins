@@ -42,10 +42,12 @@ phi_1324=72.02*pi/180;  phi_1326=80.85*pi/180;  phi_1325=pi;
 phi_1625=72.02*pi/180;  phi_1624=pi;
 phi_2514=80.85*pi/180; phi_2614=pi;
 
+dJ1=2;
+dJ2=1;
+% Скалярные константы связи (Гц)^M
+J13 = (1.67+dJ1) * 2 * pi; J14 = (-0.42-dJ2) * 2 * pi; J15 = (-0.42+dJ2) * 2 * pi; J16 = (1.67-dJ1) * 2 * pi;
+J23 = (-0.42+dJ2) * 2 * pi; J24 = (1.67-dJ1) * 2 * pi; J25 = (1.67+dJ1) * 2 * pi; J26 = (-0.42-dJ2) * 2 * pi;
 
-% Скалярные константы связи (Гц)
-J13 = 1.67 * 2 * pi; J14 = -0.42 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
-J23 = -0.42 * 2 * pi; J24 = 1.67 * 2 * pi; J25 = 1.67 * 2 * pi; J26 = -0.42 * 2 * pi;
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
@@ -63,14 +65,17 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 30;
-B = linspace(3, 5.3, NB);
+NB = 2;
+B = linspace(3.1, 5.3, NB);
 B = 1 * 10.^(B);
-tau = [9e-11]; 
-D_D_flag = 1;
-D_D_corr_flag=1;
-CSA_D_corr_flag=1;
-CSA_flag=1;
+tau = [6e-11]; 
+D_D_flag = 0;
+D_D_corr_flag=0;
+CSA_D_corr_flag=0;
+CSA_flag=0;
+H_relax_flag=0;
+T1_azo_flag=0;
+kin_flag=0;
 %% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
 for i=1:n_spins  
@@ -90,15 +95,40 @@ singlet=[0 0 0 0;
     0 0 0 0];
 
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
+%ro0 = kron(equil, kron(equil, kron(equil, kron(alpha, kron(equil, equil)))));
+if (T1_azo_flag==1)
+    ro0 = kron(kron(alpha, alpha), kron(equil, kron(equil, kron(equil, equil))));
+end
 % Проектор на синглетное состояние первых двух спинов
 PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
 PT_p = (eye(dim, dim)+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
 PT_0 = (eye(dim, dim)-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
 PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
+if (T1_azo_flag==1)
+    PS = Iz{1}+Iz{2};
+end
+%% Собственная релаксация протонов
+if (H_relax_flag==1)
+    T1 = [0 0 10 5 5 5];
+    T2 = T1;
+    %T2 = [0 0 10 5 5 5];
+    E=eye(dim, dim);
+    R_fast_1 = zeros(dim^2, dim^2);
+    R_fast_2 = zeros(dim^2, dim^2);
+    for i=3:6
+        R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1);
+        R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2);    
+    end
+    R_fast=R_fast_1+R_fast_2;
+end
 %% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
     tau_S = zeros(NB, 1);
     ttau_S = zeros(NB, 1);
+    T1_kin_1 = zeros(NB, 1);
+    T1_kin_2 = zeros(NB, 1);
+    p1_kin = zeros(NB, 1);
+    p2_kin = zeros(NB, 1);
     
     for l = 1:NB
         %% Гамильтониан Зеемана        
@@ -320,53 +350,89 @@ for p = 1:length(tau)
             end
         end
         %% Оператор эволюции и среднее время жизни синглета
+        if (H_relax_flag==1)
+            Rrf=Rrf+R_fast;
+        end
         diff_M = -1i*U*lam*i_U+Rrf;        
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
         s = 1e-5;
         I0 = eye(dim^2);
-        
+        %PS = Iz{4};
         rv_s = (I0 * s - diff_M) \ rv0;
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         tau_S(l) = prob_S_s - 1/(4 * s);
+        %tau_S(l) = prob_S_s;
+        if (T1_azo_flag==1)
+            tau_S(l) = prob_S_s;
+        end
         
         rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
-        disp(l);
-        %%расчёт кинетики и сохранение в файл
-        dt = 0.1; %с
-        Nt = 5000;
-        exp_M = expm(diff_M*dt);
-        kin_S = zeros(Nt, 1);        
-        t_mas=zeros(Nt, 1);        
-        for w=1:Nt
-            rho = reshape(rv0, [dim, dim]);
-            %kin_S(w)=(4/3)*(trace(PS * rho)-1/4);    
-            kin_S(w)=trace(PS * rho);            
-            rv0=exp_M*rv0;
-            t_mas(w)=(w-1)*dt;
-        end        
-        fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(1))/log(10), 3) '.txt'],'w');
-        fprintf(fileID,'%4.4f\r\n', ttau_S ./ tau_S);
-        for i = 1:Nt
-            fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
+        %ttau_S(l) = prob_S_s;
+        if (T1_azo_flag==1)
+            ttau_S(l) = prob_S_s;
         end
-        fclose(fileID);
+        
+        disp(l);
+        %% расчёт кинетики
+        if (kin_flag==1)
+            dt = 0.1; %с
+            Nt = 5000;
+            exp_M = expm(diff_M*dt);
+            kin_S = zeros(Nt, 1);        
+            t_mas=zeros(Nt, 1);        
+            for w=1:Nt
+                rho = reshape(rv0, [dim, dim]);               
+                kin_S(w)=trace(PS * rho);            
+                rv0=exp_M*rv0;
+                t_mas(w)=(w-1)*dt;
+            end
+            %% аппроксимация кинетики
+            exp_model = @(p, x) p(1)*exp(-x/p(2))+p(3)*exp(-x/p(4))+1/4; 
+            if (T1_azo_flag==1)
+                exp_model = @(p, x) p(1)*exp(-x/p(2))+p(3)*exp(-x/p(4));
+            end
+            initial_guess = [0.1, 10, 0.5, 100];
+            lb = [0, 0, 0, 0]; % Нижние границы
+            ub = [1, inf, 1, inf];   % Верхние границы
+            params_fit = lsqcurvefit(exp_model, initial_guess, t_mas, real(kin_S), lb, ub);
+            p1_kin(l)=params_fit(1);
+            T1_kin_1(l)=params_fit(2) ;
+            p2_kin(l)=params_fit(3);
+            T1_kin_2(l) = params_fit(4);
+            %% сохранение в файл
+            if (T1_azo_flag==1)
+                fileID = fopen(['data/kin_CSA_T1_' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.txt'],'w');
+            else
+                fileID = fopen(['data/kin_CSA_S_' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.txt'],'w');
+            end
+            fprintf(fileID,'%4.4f %4.4f %4.4f %4.4f %4.4f\n', ttau_S(l) ./ tau_S(l), p1_kin(l), T1_kin_1(l), p2_kin(l), T1_kin_2(l));
+            for i = 1:Nt
+                fprintf(fileID, '%4.4f %1.10f\n', t_mas(i), kin_S(i));
+            end
+            fclose(fileID);
+        end
     end
     %% Визуализация результатов и сохранение
     disp(ttau_S ./ tau_S);
     
-    hold on;
+    %hold on;
     %plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
     % сохранение в файл
-    to_print=[B; real(ttau_S ./ tau_S)'];
+    to_print=[B; real(ttau_S ./ tau_S)'; p1_kin'; T1_kin_1'; p2_kin'; T1_kin_2'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
-    fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
-    fprintf(fileID,'%6.6f %4.4f\r\n',to_print);
+    
+    if (T1_azo_flag==1)
+        fileID = fopen(['data/data_T1_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+    else
+        fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+    end
+    fprintf(fileID,'%6.6f %4.4f %4.4f %4.4f %4.4f %4.4f\r\n',to_print);
     fclose(fileID);
 end
 
