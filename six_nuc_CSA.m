@@ -29,6 +29,7 @@ r23 = 3.779; r24 = 2.734; r25 = 2.539; r26 = 2.470;
 r34 = 3.813; r35 = 6.317; r36 = 4.267;
 r45 = 4.267; r46 = 5.060;
 r56 = 3.813;
+
 r_mas=[r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56];
 
 % Углы между связями HN-HN прилегающие
@@ -46,6 +47,8 @@ phi_2514=80.85*pi/180; phi_2614=pi;
 % Скалярные константы связи (Гц)
 J13 = 1.67 * 2 * pi; J14 = -0.42 * 2 * pi; J15 = -0.42 * 2 * pi; J16 = 1.67 * 2 * pi;
 J23 = -0.42 * 2 * pi; J24 = 1.67 * 2 * pi; J25 = 1.67 * 2 * pi; J26 = -0.42 * 2 * pi;
+J13 = (1.67-3) * 2 * pi; J14 = (-0.42+3) * 2 * pi; J15 = (-0.42-3) * 2 * pi; J16 = (1.67+3) * 2 * pi;
+J23 = (-0.42-3) * 2 * pi; J24 = (1.67+3) * 2 * pi; J25 = (1.67-3) * 2 * pi; J26 = (-0.42+3) * 2 * pi;
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
@@ -63,13 +66,13 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 1;
-B = linspace(5, 5, NB);
+NB = 30;
+B = linspace(3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [9e-11]; 
-D_D_flag = 0;
-D_D_corr_flag=0;
-CSA_D_corr_flag=0;
+D_D_flag = 1;
+D_D_corr_flag=1;
+CSA_D_corr_flag=1;
 CSA_flag=1;
 %% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
@@ -90,7 +93,6 @@ singlet=[0 0 0 0;
     0 0 0 0];
 
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
-ro0 = kron(singlet, kron(alpha, kron(alpha, kron(alpha, alpha))));
 % Проектор на синглетное состояние первых двух спинов
 PS = (eye(dim, dim)-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
 PT_p = (eye(dim, dim)+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
@@ -326,9 +328,8 @@ for p = 1:length(tau)
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-5;
-        I0 = eye(dim^2);
-        
+        s = 1e-4;        
+        I0 = eye(dim^2);        
         rv_s = (I0 * s - diff_M) \ rv0;
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
@@ -339,6 +340,7 @@ for p = 1:length(tau)
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
         disp(l);
+        disp(ttau_S(l)/tau_S(l));
     end
     %% Визуализация результатов и сохранение
     disp(ttau_S ./ tau_S);
