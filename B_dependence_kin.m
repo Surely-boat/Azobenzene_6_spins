@@ -66,15 +66,15 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 2;
-B = linspace(3.1, 5.3, NB);
+NB = 30;
+B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
-tau_flip=5e-2;
+tau_flip=10e-2;
 flip_flag=1;
-D_D_flag = 0;
-D_D_corr_flag=0;
-CSA_D_corr_flag=0;
+D_D_flag = 1;
+D_D_corr_flag=1;
+CSA_D_corr_flag=1;
 CSA_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
@@ -235,7 +235,7 @@ for p = 1:length(tau)
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
-        end
+        end        
         %% Учёт корреляции диполь-диполей
         if (D_D_corr_flag==1)
             angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
@@ -356,6 +356,13 @@ for p = 1:length(tau)
                 Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
                 Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
+        end
+        R_DD_CSA_corr = Rrf;
+        save(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA_corr');
+         
+        if (read_from_file_flag==1)
+            load(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
+            Rrf = R_DD_CSA_corr;
         end
         %% flip C_N
         if (flip_flag==1)

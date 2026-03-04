@@ -23,8 +23,8 @@ sigmaZZ=136e-6;
 sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
 sigma3 = 7.925e-6; sigma4 = 7.925e-6; sigma5 = 7.591e-6; sigma6 = 7.591e-6;
-d_sig_34=0.2;
-d_sig_56=0.1;
+d_sig_34=0.6;
+d_sig_56=0.3;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 
 r12 = 1.248; % Å
@@ -80,7 +80,7 @@ NB = 30;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
-tau_flip=1e-2;
+tau_flip=1.5e-2;
 flip_flag=1;
 D_D_flag = 1;
 D_D_corr_flag=0;
@@ -195,7 +195,7 @@ for p = 1:length(tau)
             const_NN = 1e6 * gn^4 * beta^4 / (h^2);
 
             all_pairs = nchoosek(1:n_spins, 2);  
-            %all_pairs = nchoosek(1:3, 2);
+            all_pairs = nchoosek(1:3, 2);
             i_idx = all_pairs(:, 1);
             j_idx = all_pairs(:, 2);  
             R_DD = zeros(dim^2, dim^2);
@@ -249,10 +249,7 @@ for p = 1:length(tau)
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
-        end
-        R_DD_CSA = Rrf;
-        save(['6_spin_side_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA');
-            
+        end            
         if (read_from_file_flag==1)
             load(['6_spin_side_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
             Rrf = R_DD_CSA;
@@ -476,7 +473,10 @@ for p = 1:length(tau)
         ylabel('Рs');
     end
     %hold on;
-    %plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
+    plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
+    xlabel('Магнитное поле, Гс');
+    ylabel('Ts, с');
+    set(gca, 'XScale', 'log');
     % сохранение в файл
     to_print=[B; real(ttau_S ./ tau_S)'; p1_kin'; T1_kin_1'; p2_kin'; T1_kin_2'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
