@@ -10,11 +10,11 @@ n_spins = 6;
 dim = 2^n_spins;
 %% Параметры молекулы азобензола
 % Химические (ppm)
-sigmaXX=-789e-4;
-sigmaYY=-146e-4;
-sigmaZZ=136e-4;
-sigma1 = 509.94e-4;
-sigma2 = 509.94e-4;
+sigmaXX=-789e-6;
+sigmaYY=-146e-6;
+sigmaZZ=136e-6;
+sigma1 = 509.94e-6;
+sigma2 = 509.94e-6;
 sigma3 = 8.494e-6; sigma4 = 8.373e-6; sigma5 = 8.494e-6; sigma6 = 8.373e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 
@@ -113,7 +113,6 @@ for p = 1:length(tau)
         H_zeeman = zeros(dim, dim);
         H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma_mas(1)) / h .* (Iz{1}+Iz{2});
         for k = 3:n_spins                       
-            sigma_k = eval(['sigma' num2str(k)]);            
             H_zeeman = H_zeeman - 1e3 * g * beta * B(l) * (1 - sigma_mas(k)) / h .* Iz{k};
         end           
         %% Гамильтониан скалярного взаимодействия
@@ -378,6 +377,7 @@ kin_S = zeros(Nt, 1);
 kin_T_p = zeros(Nt, 1);
 kin_T_0 = zeros(Nt, 1);
 kin_T_m = zeros(Nt, 1);
+kin_H_a = zeros(Nt, 1);
 t_mas=zeros(Nt, 1);
 rv0 = reshape(ro0, [dim^2, 1]);
 for w=1:Nt
