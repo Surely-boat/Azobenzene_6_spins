@@ -69,14 +69,15 @@ phi_25=173*pi/180;
 NB = 30;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
-tau = [6e-11]; 
+tau = [2.5e-11]; 
 tau_flip=10e-2;
-flip_flag=1;
+flip_flag=0;
 D_D_flag = 1;
 D_D_corr_flag=1;
 CSA_D_corr_flag=1;
 CSA_flag=1;
-H_relax_flag=0;
+read_from_file_flag=0;
+H_relax_flag=1;
 T1_azo_flag=0;
 kin_flag=0;
 kin_1_flag=0;
@@ -117,7 +118,7 @@ if (T1_azo_flag==1)
 end
 %% Собственная релаксация протонов
 if (H_relax_flag==1)
-    T1 = [0 0 10 5 5 5];
+    T1 = [0 0 11 11 11 11];
     T2 = T1;
     %T2 = [0 0 10 5 5 5];
     E=eye(dim, dim);
@@ -176,7 +177,7 @@ for p = 1:length(tau)
             end    
         end 
         %% Диполь-дипольные взаимодействия между всеми парами
-        if (D_D_flag == 1)
+        if (D_D_flag == 1)&&(read_from_file_flag==0)
         % Константы для диполь-дипольного взаимодействия
             const_HH = 1e6 * g^4 * beta^4 / (h^2);
             const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
@@ -220,7 +221,7 @@ for p = 1:length(tau)
             end                      
         end 
         %% CSA
-        if (CSA_flag==1)
+        if (CSA_flag==1)&&(read_from_file_flag==0)
             % операторы
             Ap = Iup{1}+Iup{2};
             Am = Idn{1}+Idn{2};
@@ -237,7 +238,7 @@ for p = 1:length(tau)
             Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
         end        
         %% Учёт корреляции диполь-диполей
-        if (D_D_corr_flag==1)
+        if (D_D_corr_flag==1)&&(read_from_file_flag==0)
             angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
                 [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
             [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
@@ -305,7 +306,7 @@ for p = 1:length(tau)
             end
         end
         %% CSA corr
-        if (CSA_D_corr_flag==1)
+        if (CSA_D_corr_flag==1)&&(read_from_file_flag==0)
             angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
             r_CSA_mas=[r12 r13 r14 r16 r24 r25 r26];        
             phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
@@ -357,8 +358,8 @@ for p = 1:length(tau)
                 Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
         end
-        R_DD_CSA_corr = Rrf;
-        save(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA_corr');
+        %R_DD_CSA_corr = Rrf;
+        %save(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA_corr');
          
         if (read_from_file_flag==1)
             load(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);

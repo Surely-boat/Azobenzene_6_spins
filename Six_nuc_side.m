@@ -23,8 +23,8 @@ sigmaZZ=136e-6;
 sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
 sigma3 = 7.925e-6; sigma4 = 7.925e-6; sigma5 = 7.591e-6; sigma6 = 7.591e-6;
-d_sig_34=0.6;
-d_sig_56=0.3;
+d_sig_34=0.2;
+d_sig_56=0.1;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 
 r12 = 1.248; % Å
@@ -80,14 +80,14 @@ NB = 30;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
-tau_flip=1.5e-2;
+tau_flip=10e-2;% 0.1+H no picks
 flip_flag=1;
 D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
 CSA_flag=1;
 read_from_file_flag=0;
-H_relax_flag=0;
+H_relax_flag=1;
 T1_azo_flag=0;
 kin_flag=0;
 kin_1_flag=0;
@@ -128,7 +128,7 @@ if (T1_azo_flag==1)
 end
 %% Собственная релаксация протонов
 if (H_relax_flag==1)
-    T1 = [0 0 10 5 5 5];
+    T1 = [0 0 10 10 10 10];
     T2 = T1;
     %T2 = [0 0 10 5 5 5];
     E=eye(dim, dim);
