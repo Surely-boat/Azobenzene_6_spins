@@ -66,20 +66,20 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 30;
+NB = 3;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
-tau = [2.5e-11]; 
+tau = [22e-12]; 
 tau_flip=10e-2;
 flip_flag=0;
-D_D_flag = 1;
-D_D_corr_flag=1;
-CSA_D_corr_flag=1;
-CSA_flag=1;
+D_D_flag = 0;
+D_D_corr_flag=0;
+CSA_D_corr_flag=0;
+CSA_flag=0;
 read_from_file_flag=0;
 H_relax_flag=1;
-T1_azo_flag=0;
-kin_flag=0;
+T1_azo_flag=1;
+kin_flag=1;
 kin_1_flag=0;
 if (kin_1_flag==1)
     NB=1;
@@ -116,20 +116,7 @@ PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
 if (T1_azo_flag==1)
     PS = Iz{1}+Iz{2};
 end
-%% Собственная релаксация протонов
-if (H_relax_flag==1)
-    T1 = [0 0 11 11 11 11];
-    T2 = T1;
-    %T2 = [0 0 10 5 5 5];
-    E=eye(dim, dim);
-    R_fast_1 = zeros(dim^2, dim^2);
-    R_fast_2 = zeros(dim^2, dim^2);
-    for i=3:6
-        R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
-        R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
-    end
-    R_fast=R_fast_1+R_fast_2;
-end
+
 %% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
     tau_S = zeros(NB, 1);
@@ -176,6 +163,26 @@ for p = 1:length(tau)
                 Jlam(k1,k2)=1/(1/tau(p)+1i*(lam(k1,k1)-lam(k2,k2))); %0->inf 2xtimes slower
             end    
         end 
+        %% Собственная релаксация протонов
+        if (H_relax_flag==1)
+            r_HH = 2.481;
+            const_1 = 1e6*g^4*beta^4/(h^2*r_HH^6);
+            w1 = -1e3*g*beta*B(l)*(1-sigma3)/h;
+            w2 = -1e3*g*beta*B(l)*(1-sigma3)/h;
+            T1_const=1./(3/10*const_1*tau(p)*(1./(1+w2.^2*tau(p)^2)+4./(1+(w1+w2).^2*tau(p)^2)));
+            disp(T1_const);
+            T1 = [0 0 T1_const T1_const T1_const T1_const];
+            T2 = T1;
+            %T2 = [0 0 10 5 5 5];
+            E=eye(dim, dim);
+            R_fast_1 = zeros(dim^2, dim^2);
+            R_fast_2 = zeros(dim^2, dim^2);
+            for i=3:6
+                R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
+                R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
+            end            
+            Rrf=Rrf+R_fast_1+R_fast_2;
+        end
         %% Диполь-дипольные взаимодействия между всеми парами
         if (D_D_flag == 1)&&(read_from_file_flag==0)
         % Константы для диполь-дипольного взаимодействия
@@ -388,15 +395,12 @@ for p = 1:length(tau)
             Rrf = Rrf -A_flip_36_m'*U*((U\A_flip_36_m*U).*Jlam)*i_U;   
             Rrf = Rrf -A_flip_45_m'*U*((U\A_flip_45_m*U).*Jlam)*i_U;  
         end
-        %% Оператор эволюции и среднее время жизни синглета
-        if (H_relax_flag==1)
-            Rrf=Rrf+R_fast;
-        end
+        %% Оператор эволюции и среднее время жизни синглета        
         diff_M = -1i*U*lam*i_U+Rrf;        
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-4;
+        s = 1e-5;
         I0 = eye(dim^2);
         %PS = Iz{4};
         rv_s = (I0 * s - diff_M) \ rv0;
@@ -408,7 +412,7 @@ for p = 1:length(tau)
             tau_S(l) = prob_S_s;
         end
         
-        rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
+        rv_s = (I0 * s - diff_M) \ rv_s;
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);

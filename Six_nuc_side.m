@@ -194,8 +194,7 @@ for p = 1:length(tau)
             const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
             const_NN = 1e6 * gn^4 * beta^4 / (h^2);
 
-            all_pairs = nchoosek(1:n_spins, 2);  
-            all_pairs = nchoosek(1:3, 2);
+            all_pairs = nchoosek(1:n_spins, 2);              
             i_idx = all_pairs(:, 1);
             j_idx = all_pairs(:, 2);  
             R_DD = zeros(dim^2, dim^2);
