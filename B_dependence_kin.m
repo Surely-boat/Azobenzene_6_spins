@@ -170,9 +170,10 @@ for p = 1:length(tau)
             w1 = -1e3*g*beta*B(l)*(1-sigma3)/h;
             w2 = -1e3*g*beta*B(l)*(1-sigma3)/h;
             T1_const=1./(3/10*const_1*tau(p)*(1./(1+w2.^2*tau(p)^2)+4./(1+(w1+w2).^2*tau(p)^2)));
+            T2_const=1./(3/20*const_rel*tau(p)*(3+5./(1+w1.^2*tau(p)^2)+2./(1+(w1+w2).^2*tau(p)^2)));
             disp(T1_const);
             T1 = [0 0 T1_const T1_const T1_const T1_const];
-            T2 = T1;
+            T2 = [0 0 T2_const T2_const T2_const T2_const];
             %T2 = [0 0 10 5 5 5];
             E=eye(dim, dim);
             R_fast_1 = zeros(dim^2, dim^2);
