@@ -76,7 +76,7 @@ flip_flag=0;
 D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
-CSA_flag=0;
+CSA_flag=1;
 read_from_file_flag=0;
 H_relax_flag=0;
 T1_azo_flag=0;
@@ -127,7 +127,7 @@ for p = 1:length(tau)
     p1_kin = zeros(NB, 1);
     p2_kin = zeros(NB, 1);
     
-    for l = 1:NB
+    parfor l = 1:NB
         %% Гамильтониан Зеемана        
         H_zeeman = zeros(dim, dim);
         H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma_mas(1)) / h .* (Iz{1}+Iz{2});
@@ -142,9 +142,9 @@ for p = 1:length(tau)
         i_idx = all_pairs(:, 1);
         j_idx = all_pairs(:, 2);         
         for idx = 1:size(all_pairs, 1)
-            i = i_idx(idx);
+            spin_i = i_idx(idx);
             j = j_idx(idx);            
-            H_J = H_J + J_mas(idx)*(Iz{i}*Iz{j} + 0.5*(Iup{i}*Idn{j} + Idn{i}*Iup{j}));
+            H_J = H_J + J_mas(idx)*(Iz{spin_i}*Iz{j} + 0.5*(Iup{spin_i}*Idn{j} + Idn{spin_i}*Iup{j}));
         end
         
         %% Полный гамильтониан и диагонализация
@@ -178,9 +178,9 @@ for p = 1:length(tau)
             E=eye(dim, dim);
             R_fast_1 = zeros(dim^2, dim^2);
             R_fast_2 = zeros(dim^2, dim^2);
-            for i=3:6
-                R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
-                R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
+            for ii=3:6
+                R_fast_1=R_fast_1+(kron(Iup{ii},Iup{ii})+kron(Idn{ii},Idn{ii})-2*kron(Iz{ii},Iz{ii})-0.5*kron(E, E))/(2*T1(ii));
+                R_fast_2=R_fast_2+(2*kron(Iz{ii},Iz{ii})-0.5*kron(E, E))/(T2(ii));    
             end            
             Rrf=Rrf+R_fast_1+R_fast_2;
         end
@@ -194,15 +194,15 @@ for p = 1:length(tau)
             all_pairs = nchoosek(1:n_spins, 2);    
             i_idx = all_pairs(:, 1);
             j_idx = all_pairs(:, 2);        
-            parfor idx = 1:size(all_pairs, 1)
-                i = i_idx(idx);
+            for idx = 1:size(all_pairs, 1)
+                spin_i = i_idx(idx);
                 j = j_idx(idx);                                     
                 % Операторы диполь-дипольного взаимодействия 
-                A_cs2 = Iup{i}*Idn{j}+Idn{i}*Iup{j}-4*Iz{i}*Iz{j};
-                A_up = Iz{i}*Iup{j}+Iup{i}*Iz{j};
-                A_dn = Iz{i}*Idn{j}+Idn{i}*Iz{j};
-                A4 = Iup{i}*Iup{j};
-                A5 = Idn{i}*Idn{j};
+                A_cs2 = Iup{spin_i}*Idn{j}+Idn{spin_i}*Iup{j}-4*Iz{spin_i}*Iz{j};
+                A_up = Iz{spin_i}*Iup{j}+Iup{spin_i}*Iz{j};
+                A_dn = Iz{spin_i}*Idn{j}+Idn{spin_i}*Iz{j};
+                A4 = Iup{spin_i}*Iup{j};
+                A5 = Idn{spin_i}*Idn{j};
                 % размерность
                 A_cs2_m=kron(A_cs2, eye(dim)) - kron(eye(dim), A_cs2');
                 A_up_m=kron(A_up, eye(dim)) - kron(eye(dim), A_up');
@@ -211,10 +211,10 @@ for p = 1:length(tau)
                 A_5_m=kron(A5, eye(dim)) - kron(eye(dim), A5');                        
                 % Расстояние между ядрами
                 r_ij = r_mas(idx);
-                if (i==1)&&(j==2)
+                if (spin_i==1)&&(j==2)
                     const_rel=const_NN/r_ij^6;                  
                 else
-                    if (i==1)||(i==2)
+                    if (spin_i==1)||(spin_i==2)
                         const_rel=const_HN/r_ij^6;                        
                     else
                         const_rel=const_HH/r_ij^6;                       
@@ -264,14 +264,14 @@ for p = 1:length(tau)
                 k_idx(o)=angles{o}(3);
                 m_idx(o)=angles{o}(4);
             end
-            parfor idx = 1:length(angles)
-                i = i_idx(idx);  j = j_idx(idx);   k = k_idx(idx);  m = m_idx(idx);                         
+            for idx = 1:length(angles)
+                spin_i = i_idx(idx);  j = j_idx(idx);   spin_k = k_idx(idx);  m = m_idx(idx);                         
                 %first pair
-                A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
-                A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
-                A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
-                A4_1 = Iup{j}*Iup{i};
-                A5_1 = Idn{j}*Idn{i};
+                A_cs2_1 = Iup{j}*Idn{spin_i}+Idn{j}*Iup{spin_i}-4*Iz{j}*Iz{spin_i};
+                A_up_1 = Iz{j}*Iup{spin_i}+Iup{j}*Iz{spin_i};
+                A_dn_1 = Iz{j}*Idn{spin_i}+Idn{j}*Iz{spin_i};
+                A4_1 = Iup{j}*Iup{spin_i};
+                A5_1 = Idn{j}*Idn{spin_i};
                 % dimentions
                 A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
                 A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
@@ -279,11 +279,11 @@ for p = 1:length(tau)
                 A_4_m_1=kron(A4_1, eye(dim)) - kron(eye(dim), A4_1');
                 A_5_m_1=kron(A5_1, eye(dim)) - kron(eye(dim), A5_1');
                 %second pair
-                A_cs2_2 = Iup{m}*Idn{k}+Idn{m}*Iup{k}-4*Iz{m}*Iz{k};
-                A_up_2 = Iz{m}*Iup{k}+Iup{m}*Iz{k};
-                A_dn_2 = Iz{m}*Idn{k}+Idn{m}*Iz{k};
-                A4_2 = Iup{m}*Iup{k};
-                A5_2 = Idn{m}*Idn{k};
+                A_cs2_2 = Iup{m}*Idn{spin_k}+Idn{m}*Iup{spin_k}-4*Iz{m}*Iz{spin_k};
+                A_up_2 = Iz{m}*Iup{spin_k}+Iup{m}*Iz{spin_k};
+                A_dn_2 = Iz{m}*Idn{spin_k}+Idn{m}*Iz{spin_k};
+                A4_2 = Iup{m}*Iup{spin_k};
+                A5_2 = Idn{m}*Idn{spin_k};
                 % dimentions
                 A_cs2_m_2=kron(A_cs2_2, eye(dim)) - kron(eye(dim), A_cs2_2');
                 A_up_m_2=kron(A_up_2, eye(dim)) - kron(eye(dim), A_up_2');
@@ -324,14 +324,14 @@ for p = 1:length(tau)
                 i_idx(o)=angles{o}(1);
                 j_idx(o)=angles{o}(2);            
             end
-            parfor idx = 1:length(angles)
-                i = i_idx(idx);  j = j_idx(idx);                    
+            for idx = 1:length(angles)
+                spin_i = i_idx(idx);  j = j_idx(idx);                    
                 %dipole
-                A_cs2_1 = Iup{j}*Idn{i}+Idn{j}*Iup{i}-4*Iz{j}*Iz{i};
-                A_up_1 = Iz{j}*Iup{i}+Iup{j}*Iz{i};
-                A_dn_1 = Iz{j}*Idn{i}+Idn{j}*Iz{i};
-                A4_1 = Iup{j}*Iup{i};
-                A5_1 = Idn{j}*Idn{i};
+                A_cs2_1 = Iup{j}*Idn{spin_i}+Idn{j}*Iup{spin_i}-4*Iz{j}*Iz{spin_i};
+                A_up_1 = Iz{j}*Iup{spin_i}+Iup{j}*Iz{spin_i};
+                A_dn_1 = Iz{j}*Idn{spin_i}+Idn{j}*Iz{spin_i};
+                A4_1 = Iup{j}*Iup{spin_i};
+                A5_1 = Idn{j}*Idn{spin_i};
                 % dimentions
                 A_cs2_m_1=kron(A_cs2_1, eye(dim)) - kron(eye(dim), A_cs2_1');
                 A_up_m_1=kron(A_up_1, eye(dim)) - kron(eye(dim), A_up_1');
@@ -369,10 +369,10 @@ for p = 1:length(tau)
         %R_DD_CSA_corr = Rrf;
         %save(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA_corr');
          
-        if (read_from_file_flag==1)
-            load(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
-            Rrf = R_DD_CSA_corr;
-        end
+        % if (read_from_file_flag==1)
+        %     load(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
+        %     Rrf = R_DD_CSA_corr;
+        % end
         %% flip C_N
         if (flip_flag==1)
             A_flip_1=dJ2*0.5*(Iup{1}*(Idn{3}-Idn{6})+Idn{1}*(Iup{3}-Iup{6})+Iz{1}*(Iz{3}-Iz{6}));
