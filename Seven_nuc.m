@@ -13,8 +13,8 @@ dim = 2^n_spins;
 OPTIMIZATION.use_sparse = true;      % Использовать разреженные матрицы
 OPTIMIZATION.use_gpu = false;         % Использовать GPU (если доступно)
 
-NB = 1;
-B = linspace(3.3, 3.3, NB);
+NB = 96;
+B = linspace(3, 4, NB);
 B = 1 * 10.^(B);
 tau = [22e-12]; 
 tau_flip=10e-2;
@@ -23,7 +23,7 @@ D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
 CSA_flag=1;
-read_from_file_flag=0;
+read_from_file_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
 kin_flag=0;
@@ -171,15 +171,9 @@ PT_m = (eye_dim-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})*0.25;
 if (T1_azo_flag==1)
     PS = Iz{1}+Iz{2};
 end
-% superoperators for CSA
-Ap = Iup{1}+Iup{2};
-Am = Idn{1}+Idn{2};
-Az = Iz{1}+Iz{2};
-Ap_m=kron(Ap, eye_dim) - kron(eye_dim, Ap');
-Am_m=kron(Am, eye_dim) - kron(eye_dim, Am');
-if OPTIMIZATION.use_gpu
-    Ap_m=gpuArray(Ap_m);
-    Am_m=gpuArray(Am_m);    
+% DD-relax super
+if (read_from_file_flag==1)
+    load('Seven_spin_DD_relmat_22ps/3.3Gs.mat');    
 end
 %% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
@@ -190,7 +184,7 @@ for p = 1:length(tau)
     p1_kin = zeros(NB, 1);
     p2_kin = zeros(NB, 1);
     
-    for l = 1:NB
+    parfor l = 1:NB
         %% Гамильтониан Зеемана        
         H_zeeman = OPTIMIZATION.use_sparse * sparse(dim, dim) + ...
                    ~OPTIMIZATION.use_sparse * zeros(dim, dim);
@@ -329,11 +323,24 @@ for p = 1:length(tau)
                 end
                disp(['DD numder ' num2str(idx) ' done']); 
             end
-            R_DD = Rrf;
-            save(['Seven_spin_DD_relmat_22ps/' num2str(log(B(l))/log(10),3) 'Gs.mat'], "R_DD", '-v7.3');
-        end 
+            %R_DD = Rrf;
+            %save(['Seven_spin_DD_relmat_22ps/' num2str(log(B(l))/log(10),3) 'Gs.mat'], "R_DD", '-v7.3');
+        end
+        if (D_D_flag == 1)&&(read_from_file_flag==1)
+            Rrf = R_DD;
+        end
         %% CSA
-        if (CSA_flag==1)&&(read_from_file_flag==0)
+        if (CSA_flag==1)
+            % superoperators for CSA
+            Ap = Iup{1}+Iup{2};
+            Am = Idn{1}+Idn{2};
+            Az = Iz{1}+Iz{2};
+            Ap_m=kron(Ap, eye_dim) - kron(eye_dim, Ap');
+            Am_m=kron(Am, eye_dim) - kron(eye_dim, Am');
+            if OPTIMIZATION.use_gpu
+                Ap_m=gpuArray(Ap_m);
+                Am_m=gpuArray(Am_m);    
+            end
            %константы
             sigma_const=(sigmaXX^2+sigmaYY^2+sigmaZZ^2-sigmaXX*sigmaYY-sigmaXX*sigmaZZ-sigmaZZ*sigmaYY);
             const_CSA=1e3*gn*beta/h;
@@ -347,7 +354,7 @@ for p = 1:length(tau)
             end            
         end        
         %% Учёт корреляции диполь-диполей
-        if (D_D_corr_flag==1)&&(read_from_file_flag==0)
+        if (D_D_corr_flag==1)
             angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
                 [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
             [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
@@ -429,7 +436,7 @@ for p = 1:length(tau)
             end
         end
         %% CSA corr
-        if (CSA_D_corr_flag==1)&&(read_from_file_flag==0)
+        if (CSA_D_corr_flag==1)
             angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
             r_CSA_mas=[r12 r13 r14 r16 r24 r25 r26];        
             phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
@@ -523,7 +530,7 @@ for p = 1:length(tau)
             Rrf = Rrf -A_flip_45_m'*U*((U\A_flip_45_m*U).*Jlam)*i_U;  
         end
         %% Оператор эволюции и среднее время жизни синглета        
-        diff_M = -1i*(kron(H_total, eye_dim)-kron(eye_dim, conj(H_total)))+gather(Rrf);        
+        diff_M = -1i*(kron(H_total, eye_dim)-kron(eye_dim, conj(H_total)))+Rrf;        
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
