@@ -1,4 +1,5 @@
 clear;
+tic;
 % Всё считаем в герцах
 %% Константы
 beta = 5.05; % 1e-24
@@ -66,16 +67,17 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 2;
-B = linspace(3.1, 5.3, NB);
+NB = 30;
+B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
-tau = [6e-11]; 
-tau_flip=5e-2;
+tau = [60e-12]; 
+tau_flip=10e-2;
 flip_flag=1;
-D_D_flag = 0;
+D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
 CSA_flag=1;
+read_from_file_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
 kin_flag=0;
@@ -115,20 +117,7 @@ PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
 if (T1_azo_flag==1)
     PS = Iz{1}+Iz{2};
 end
-%% Собственная релаксация протонов
-if (H_relax_flag==1)
-    T1 = [0 0 10 5 5 5];
-    T2 = T1;
-    %T2 = [0 0 10 5 5 5];
-    E=eye(dim, dim);
-    R_fast_1 = zeros(dim^2, dim^2);
-    R_fast_2 = zeros(dim^2, dim^2);
-    for i=3:6
-        R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
-        R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
-    end
-    R_fast=R_fast_1+R_fast_2;
-end
+
 %% Основные циклы по времени корреляции и магнитному полю
 for p = 1:length(tau)
     tau_S = zeros(NB, 1);
@@ -175,8 +164,28 @@ for p = 1:length(tau)
                 Jlam(k1,k2)=1/(1/tau(p)+1i*(lam(k1,k1)-lam(k2,k2))); %0->inf 2xtimes slower
             end    
         end 
+        %% Собственная релаксация протонов
+        if (H_relax_flag==1)
+            r_HH = 2.481;
+            const_1 = 1e6*g^4*beta^4/(h^2*r_HH^6);
+            w1 = -1e3*g*beta*B(l)*(1-sigma3)/h;
+            w2 = -1e3*g*beta*B(l)*(1-sigma3)/h;
+            T1_const=1./(3/10*const_1*tau(p)*(1./(1+w2.^2*tau(p)^2)+4./(1+(w1+w2).^2*tau(p)^2)));
+            T2_const=1./(3/20*const_rel*tau(p)*(3+5./(1+w1.^2*tau(p)^2)+2./(1+(w1+w2).^2*tau(p)^2)));
+            T1 = [0 0 T1_const T1_const T1_const T1_const];
+            T2 = [0 0 T2_const T2_const T2_const T2_const];
+            %T2 = [0 0 10 5 5 5];
+            E=eye(dim, dim);
+            R_fast_1 = zeros(dim^2, dim^2);
+            R_fast_2 = zeros(dim^2, dim^2);
+            for i=3:6
+                R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
+                R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
+            end            
+            Rrf=Rrf+R_fast_1+R_fast_2;
+        end
         %% Диполь-дипольные взаимодействия между всеми парами
-        if (D_D_flag == 1)
+        if (D_D_flag == 1)&&(read_from_file_flag==0)
         % Константы для диполь-дипольного взаимодействия
             const_HH = 1e6 * g^4 * beta^4 / (h^2);
             const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
@@ -220,7 +229,7 @@ for p = 1:length(tau)
             end                      
         end 
         %% CSA
-        if (CSA_flag==1)
+        if (CSA_flag==1)&&(read_from_file_flag==0)
             % операторы
             Ap = Iup{1}+Iup{2};
             Am = Idn{1}+Idn{2};
@@ -235,9 +244,9 @@ for p = 1:length(tau)
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Ap_m'*U*((U\Ap_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(1/30)*(sigma_const)*Am_m'*U*((U\Am_m*U).*Jlam)*i_U;
             Rrf = Rrf -(const_CSA*B(l))^2*(4/45)*(sigma_const)*Az_m'*U*((U\Az_m*U).*Jlam)*i_U;
-        end
+        end        
         %% Учёт корреляции диполь-диполей
-        if (D_D_corr_flag==1)
+        if (D_D_corr_flag==1)&&(read_from_file_flag==0)
             angles = {[3, 1, 1, 4], [3, 1, 1, 6], [4, 1, 1, 6], [1, 4, 4, 2], [5, 2, 2, 6], [4, 2, 2, 5], [4, 2, 2, 6], [1, 6, 6, 2], ...
                 [1, 3, 2, 4], [1, 3, 2, 6], [1, 3, 2, 5], [1, 6, 2, 5], [1, 6, 2, 4], [2, 5, 1, 4], [2, 6, 1, 4], ...
             [2, 1, 1, 3], [2, 1, 1, 4], [2, 1, 1, 6], [1, 2, 2, 5], [1, 2, 2, 6], [1, 2, 2, 4]};%NH-NN
@@ -305,7 +314,7 @@ for p = 1:length(tau)
             end
         end
         %% CSA corr
-        if (CSA_D_corr_flag==1)
+        if (CSA_D_corr_flag==1)&&(read_from_file_flag==0)
             angles = {[1, 2], [1, 3], [1, 4], [1, 6], [2, 4], [2, 5], [2, 6]};%NH-NN
             r_CSA_mas=[r12 r13 r14 r16 r24 r25 r26];        
             phi_mas=[phi_12 phi_13 phi_14 phi_16 phi_24 phi_25 phi_26];
@@ -357,6 +366,13 @@ for p = 1:length(tau)
                 Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
             end
         end
+        %R_DD_CSA_corr = Rrf;
+        %save(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA_corr');
+         
+        if (read_from_file_flag==1)
+            load(['6_spin_sym_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
+            Rrf = R_DD_CSA_corr;
+        end
         %% flip C_N
         if (flip_flag==1)
             A_flip_1=dJ2*0.5*(Iup{1}*(Idn{3}-Idn{6})+Idn{1}*(Iup{3}-Iup{6})+Iz{1}*(Iz{3}-Iz{6}));
@@ -380,15 +396,12 @@ for p = 1:length(tau)
             Rrf = Rrf -A_flip_36_m'*U*((U\A_flip_36_m*U).*Jlam)*i_U;   
             Rrf = Rrf -A_flip_45_m'*U*((U\A_flip_45_m*U).*Jlam)*i_U;  
         end
-        %% Оператор эволюции и среднее время жизни синглета
-        if (H_relax_flag==1)
-            Rrf=Rrf+R_fast;
-        end
+        %% Оператор эволюции и среднее время жизни синглета        
         diff_M = -1i*U*lam*i_U+Rrf;        
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-4;
+        s = 1e-5;
         I0 = eye(dim^2);
         %PS = Iz{4};
         rv_s = (I0 * s - diff_M) \ rv0;
@@ -400,7 +413,7 @@ for p = 1:length(tau)
             tau_S(l) = prob_S_s;
         end
         
-        rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
+        rv_s = (I0 * s - diff_M) \ rv_s;
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
@@ -433,7 +446,7 @@ for p = 1:length(tau)
             ub = [1, inf, 1, inf];   % Верхние границы
             params_fit = lsqcurvefit(exp_model, initial_guess, t_mas, real(kin_S), lb, ub);
             p1_kin(l)=params_fit(1);
-            T1_kin_1(l)=params_fit(2) ;
+            T1_kin_1(l)=params_fit(2);
             p2_kin(l)=params_fit(3);
             T1_kin_2(l) = params_fit(4);
             %% сохранение в файл
@@ -466,4 +479,5 @@ for p = 1:length(tau)
     fprintf(fileID,'%6.6f %4.4f %4.4f %4.4f %4.4f %4.4f\r\n',to_print);
     fclose(fileID);
 end
-
+elapsed_time = toc;
+fprintf('Время выполнения: %.4f секунд\n', elapsed_time);

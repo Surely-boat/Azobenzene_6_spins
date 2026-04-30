@@ -23,8 +23,9 @@ sigmaZZ=136e-6;
 sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
 sigma3 = 7.925e-6; sigma4 = 7.925e-6; sigma5 = 7.591e-6; sigma6 = 7.591e-6;
-d_sig_34=0.2;
-d_sig_56=0.1;
+%sigma5 = 7.925e-6; sigma6 = 7.925e-6;
+d_sig_34=0.4e-6;
+d_sig_56=0.2e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 
 r12 = 1.248; % Å
@@ -51,17 +52,20 @@ phi_1324=72.02*pi/180;  phi_1326=80.85*pi/180;  phi_1325=pi;
 phi_1625=72.02*pi/180;  phi_1624=pi;
 phi_2514=80.85*pi/180; phi_2614=pi;
 
-dJ1_34=2;
-dJ1_56=0.5;
-dJ2_34=0;
-dJ2_56=0;
+dJ1_34=2*2*pi;
+dJ1_56=1*2*pi;
+dJ2_34=-1*2*pi;
+dJ2_56=-0.5*2*pi;
 % Скалярные константы связи (Гц)^M
 J13 = (-0.42) * 2 * pi; J14 = (-0.42) * 2 * pi; J15 = (0.16) * 2 * pi; J16 = (0.16) * 2 * pi;
 J23 = (1.67) * 2 * pi; J24 = (1.67) * 2 * pi; J25 = (0.2) * 2 * pi; J26 = (0.2) * 2 * pi;
 
+
+
 J34 = 2.11 * 2 * pi; J35 = 7.96 * 2 * pi; J36 = 0.58 * 2 * pi;
 J45 = 0.58 * 2 * pi; J46 = 7.96 * 2 * pi;
 J56 = 1.53 * 2 * pi;
+
 J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
 %параметры анизотроопии
 psi=-37*pi/180; % угол между XX и 12
@@ -80,7 +84,7 @@ NB = 30;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
-tau_flip=5e-2;
+tau_flip=1e-3;
 flip_flag=1;
 D_D_flag = 1;
 D_D_corr_flag=0;
@@ -128,13 +132,13 @@ if (T1_azo_flag==1)
 end
 %% Собственная релаксация протонов
 if (H_relax_flag==1)
-    T1 = [0 0 10 5 5 5];
+    T1 = [0 0 10 5 10 10];
     T2 = T1;
     %T2 = [0 0 10 5 5 5];
     E=eye(dim, dim);
     R_fast_1 = zeros(dim^2, dim^2);
     R_fast_2 = zeros(dim^2, dim^2);
-    for i=3:6
+    for i=5:6
         R_fast_1=R_fast_1+(kron(Iup{i},Iup{i})+kron(Idn{i},Idn{i})-2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(2*T1(i));
         R_fast_2=R_fast_2+(2*kron(Iz{i},Iz{i})-0.5*kron(E, E))/(T2(i));    
     end
@@ -253,7 +257,7 @@ for p = 1:length(tau)
         %save(['6_spin_side_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat'], 'R_DD_CSA');
             
         if (read_from_file_flag==1)
-            load(['6_spin_side_Rel_mat_DD_CSA_3.3_5.3/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
+            load(['6_spin_side_Rel_mat_DD_CSA_3.3_5.3_60ps/' num2str(tau(p)*1e9) '_' num2str(log(B(l))/log(10), 3) '.mat']);
             Rrf = R_DD_CSA;
         end
         %% Учёт корреляции диполь-диполей
@@ -405,10 +409,12 @@ for p = 1:length(tau)
         % Преобразование начальной матрицы плотности
         rv0 = reshape(ro0, [dim^2, 1]);        
         % Вычисление времени жизни через преобразование Лапласа
-        s = 1e-4;
+        s = 1e-5;
+        %{
         if (B(l)>2e4)
             s = 1e-3;
         end
+        %}
         I0 = eye(dim^2);
         %PS = Iz{4};
         rv_s = (I0 * s - diff_M) \ rv0;
@@ -420,7 +426,7 @@ for p = 1:length(tau)
             tau_S(l) = prob_S_s;
         end
         
-        rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
+        rv_s = (I0 * s - diff_M) \ rv_s;
         rho_s = reshape(rv_s, [dim, dim]);
         prob_S_s = trace(PS * rho_s);
         ttau_S(l) = prob_S_s - 1/(4 * s^2);
@@ -477,7 +483,7 @@ for p = 1:length(tau)
         xlabel('Время, с');
         ylabel('Рs');
     end
-    %hold on;
+    hold on;
     plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns'], 'LineWidth', 2);
     xlabel('Магнитное поле, Гс');
     ylabel('Ts, с');
