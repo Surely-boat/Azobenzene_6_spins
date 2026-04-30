@@ -9,6 +9,46 @@ h = 1.054; % 1e-27
 % Количество спинов
 n_spins = 6;
 dim = 2^n_spins;
+%% Параметры расчёта
+OPTIMIZATION.use_sparse = true;      % Использовать разреженные матрицы
+OPTIMIZATION.use_gpu = false;         % Использовать GPU (если доступно)
+
+NB = 1;
+B = linspace(3.3, 5.3, NB);
+B = 1 * 10.^(B);
+tau = [22e-12]; 
+tau_flip=10e-2;
+flip_flag=0;
+D_D_flag = 1;
+D_D_corr_flag=0;
+CSA_D_corr_flag=0;
+CSA_flag=1;
+read_from_file_flag=0;
+H_relax_flag=1;
+T1_azo_flag=0;
+kin_flag=0;
+kin_1_flag=0;
+if (kin_1_flag==1)
+    NB=1;
+    B = 1.485*10.^[4];
+end
+if OPTIMIZATION.use_gpu
+    B = gpuArray(B);
+end
+%% Проверка доступности GPU
+if OPTIMIZATION.use_gpu
+    try
+        gpuDevice();
+        OPTIMIZATION.gpu_available = true;
+         fprintf('GPU доступен и будет использоваться\n');
+    catch
+        OPTIMIZATION.gpu_available = false;
+        OPTIMIZATION.use_gpu = false;
+        fprintf('GPU недоступен, используется CPU\n');
+    end
+else
+    OPTIMIZATION.gpu_available = false;
+end
 %% Параметры молекулы азобензола
 % Химические (ppm)
 sigmaXX=-789e-6;
@@ -18,7 +58,11 @@ sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
 sigma3 = 7.925e-6; sigma4 = 7.925e-6; sigma5 = 7.925e-6; sigma6 = 7.925e-6;
 d_sig=0.2e-6;
-sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
+if OPTIMIZATION.use_gpu
+    sigma_mas=gpuArray([sigma1 sigma2 sigma3 sigma4 sigma5 sigma6]);
+else
+    sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
+end
 
 r12 = 1.248; % Å
 J12 = 16 * 2 * pi; % Гц переводим в цикл. частоту
@@ -31,7 +75,11 @@ r23 = 3.779; r24 = 2.734; r25 = 2.539; r26 = 2.470;
 r34 = 3.813; r35 = 6.317; r36 = 4.267;
 r45 = 4.267; r46 = 5.060;
 r56 = 3.813;
-r_mas=[r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56];
+if OPTIMIZATION.use_gpu
+    r_mas=gpuArray([r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56]);
+else
+    r_mas=[r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56];
+end
 
 % Углы между связями HN-HN прилегающие
 phi_3114=99.2*pi/180;    phi_3116=108*pi/180;     phi_4116=152.9*pi/180;   phi_1442=27.1*pi/180;   
@@ -53,7 +101,11 @@ J23 = (-0.42) * 2 * pi; J24 = (1.67) * 2 * pi; J25 = (1.67) * 2 * pi; J26 = (-0.
 J34 = 0 * 2 * pi; J35 = 0 * 2 * pi; J36 = 2.11 * 2 * pi;
 J45 = 2.11 * 2 * pi; J46 = 0 * 2 * pi;
 J56 = 0 * 2 * pi;
-J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
+if OPTIMIZATION.use_gpu
+    J_mas = gpuArray([J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56]);
+else
+    J_mas = [J12 J13 J14 J15 J16 J23 J24 J25 J26 J34 J35 J36 J45 J46 J56];
+end
 %параметры анизотроопии
 psi=-37*pi/180; % угол между XX и 12
 phi_12=0;
@@ -66,37 +118,12 @@ phi_14=92.2*pi/180;
 phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
-%% Параметры расчёта
-OPTIMIZATION.use_sparse = true;      % Использовать разреженные матрицы
-
-NB = 1;
-B = linspace(3.3, 5.3, NB);
-B = 1 * 10.^(B);
-tau = [22e-12]; 
-tau_flip=10e-2;
-flip_flag=0;
-D_D_flag = 1;
-D_D_corr_flag=0;
-CSA_D_corr_flag=0;
-CSA_flag=1;
-read_from_file_flag=0;
-H_relax_flag=0;
-T1_azo_flag=0;
-kin_flag=0;
-kin_1_flag=0;
-if (kin_1_flag==1)
-    NB=1;
-    B = 1.485*10.^[4];
-end
 %% Создание операторов для каждого спина
 up = [0 1; 0 0]; dn = [0 0; 1 0]; z = [0.5 0; 0 -0.5];
 if OPTIMIZATION.use_sparse
     up = sparse(up);
     dn = sparse(dn);
     z = sparse(z);
-    eye2 = speye(2);
-else
-    eye2 = eye(2);
 end
 
 for i = 1:n_spins
@@ -110,12 +137,23 @@ for i = 1:n_spins
         Iz{i} = kron(kron(eye(2^(i-1)), z), eye(2^(n_spins-i)));
     end
 end
+if OPTIMIZATION.use_gpu
+    for i = 1:n_spins
+        Iup{i} = gpuArray(Iup{i});
+        Idn{i} = gpuArray(Idn{i});
+        Iz{i} = gpuArray(Iz{i});
+    end
+end
 if OPTIMIZATION.use_sparse
     eye_dim = speye(dim);
     eye_dim2 = speye(dim^2);
 else
     eye_dim = eye(dim);
     eye_dim2 = eye(dim^2);
+end
+if OPTIMIZATION.use_gpu
+    eye_dim = gpuArray(eye_dim);
+    eye_dim2 = gpuArray(eye_dim2);    
 end
 % Начальная матрица плотности (только первая пара в синглете)
 alpha=[1 0; 0 0];
@@ -132,16 +170,22 @@ if OPTIMIZATION.use_sparse
     equil = sparse(equil);
     singlet = sparse(singlet);
 end
+if OPTIMIZATION.use_gpu
+    alpha = gpuArray(alpha);
+    bita = gpuArray(bita);
+    equil = gpuArray(equil);
+    singlet = gpuArray(singlet);
+end
 ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, equil))));
 %ro0 = kron(equil, kron(equil, kron(equil, kron(alpha, kron(equil, equil)))));
 if (T1_azo_flag==1)
     ro0 = kron(kron(alpha, alpha), kron(equil, kron(equil, kron(equil, equil))));
 end
 % Проектор на синглетное состояние первых двух спинов
-PS = (eye_dim-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
-PT_p = (eye_dim+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})/4;
-PT_0 = (eye_dim-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
-PT_m = (eye_dim-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
+PS = (eye_dim-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))*0.25; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
+PT_p = (eye_dim+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})*0.25;
+PT_0 = (eye_dim-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))*0.25;
+PT_m = (eye_dim-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})*0.25;
 if (T1_azo_flag==1)
     PS = Iz{1}+Iz{2};
 end
@@ -159,6 +203,9 @@ for p = 1:length(tau)
         %% Гамильтониан Зеемана        
         H_zeeman = OPTIMIZATION.use_sparse * sparse(dim, dim) + ...
                    ~OPTIMIZATION.use_sparse * zeros(dim, dim);
+        if OPTIMIZATION.use_gpu
+            H_zeeman = gpuArray(H_zeeman);
+        end
         H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma_mas(1)) / h .* (Iz{1}+Iz{2});
         for k = 3:n_spins                       
             H_zeeman = H_zeeman - 1e3 * g * beta * B(l) * (1 - sigma_mas(k)) / h .* Iz{k};
@@ -166,7 +213,9 @@ for p = 1:length(tau)
         %% Гамильтониан скалярного взаимодействия
         H_J = OPTIMIZATION.use_sparse * sparse(dim, dim) + ...
               ~OPTIMIZATION.use_sparse * zeros(dim, dim);                
-        
+        if OPTIMIZATION.use_gpu
+            H_J = gpuArray(H_J);
+        end
         % Все пары диполь-дипольного взаимодействия
         all_pairs = nchoosek(1:n_spins, 2);    
         i_idx = all_pairs(:, 1);
@@ -197,24 +246,48 @@ for p = 1:length(tau)
         Jlam = Jlam(:);
         if OPTIMIZATION.use_sparse
             Jlam_sparse = spdiags(Jlam, 0, dim^2, dim^2);
+            if OPTIMIZATION.use_gpu
+                Jlam_sparse = gpuArray(Jlam_sparse);
+            end
         end
+        if OPTIMIZATION.use_gpu
+            Jlam = gpuArray(Jlam);
+        end
+        
+        
         % Релаксационный оператор Редфилда        
         Rrf = OPTIMIZATION.use_sparse * sparse(dim^2, dim^2) + ...
                    ~OPTIMIZATION.use_sparse * zeros(dim^2, dim^2);
+        if OPTIMIZATION.use_gpu
+            Rrf = gpuArray(Rrf);
+        end
         
         %% Собственная релаксация протонов
         if (H_relax_flag==1)
             r_HH = 2.481;
             const_1 = 1e6*g^4*beta^4/(h^2*r_HH^6);
+            sigma_meta = 7.591e-6;
             w1 = -1e3*g*beta*B(l)*(1-sigma3)/h;
-            w2 = -1e3*g*beta*B(l)*(1-sigma3)/h;
+            w2 = -1e3*g*beta*B(l)*(1-sigma_meta)/h;
             T1_const=1./(3/10*const_1*tau(p)*(1./(1+w2.^2*tau(p)^2)+4./(1+(w1+w2).^2*tau(p)^2)));
-            T2_const=1./(3/20*const_rel*tau(p)*(3+5./(1+w1.^2*tau(p)^2)+2./(1+(w1+w2).^2*tau(p)^2)));
+            T2_const=1./(3/20*const_1*tau(p)*(3+5./(1+w1.^2*tau(p)^2)+2./(1+(w1+w2).^2*tau(p)^2)));
+            disp(T1_const);
+            disp(T2_const);
             T1 = [0 0 T1_const T1_const T1_const T1_const];
             T2 = [0 0 T2_const T2_const T2_const T2_const];
+            if OPTIMIZATION.use_gpu
+                T1 = gpuArray(T1);
+                T2 = gpuArray(T2);
+            end
             %T2 = [0 0 10 5 5 5];            
-            R_fast_1 = eye_dim2;
-            R_fast_2 = eye_dim2;
+            R_fast_1 = OPTIMIZATION.use_sparse * sparse(dim^2, dim^2) + ...
+                   ~OPTIMIZATION.use_sparse * zeros(dim^2, dim^2);
+            R_fast_2 = OPTIMIZATION.use_sparse * sparse(dim^2, dim^2) + ...
+                   ~OPTIMIZATION.use_sparse * zeros(dim^2, dim^2);
+            if OPTIMIZATION.use_gpu
+                R_fast_1 = gpuArray(R_fast_1);
+                R_fast_2 = gpuArray(R_fast_2);
+            end
             for ii=3:6
                 R_fast_1=R_fast_1+(kron(Iup{ii},Iup{ii})+kron(Idn{ii},Idn{ii})-2*kron(Iz{ii},Iz{ii})-0.5*kron(eye_dim, eye_dim))/(2*T1(ii));
                 R_fast_2=R_fast_2+(2*kron(Iz{ii},Iz{ii})-0.5*kron(eye_dim, eye_dim))/(T2(ii));    
@@ -228,7 +301,8 @@ for p = 1:length(tau)
             const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
             const_NN = 1e6 * gn^4 * beta^4 / (h^2);
 
-            all_pairs = nchoosek(1:n_spins, 2);                   
+            all_pairs = nchoosek(1:n_spins, 2);   
+            all_pairs = nchoosek(1:3, 2);
             i_idx = all_pairs(:, 1);
             j_idx = all_pairs(:, 2);        
             for idx = 1:size(all_pairs, 1)
@@ -353,17 +427,31 @@ for p = 1:length(tau)
                     const_rel=(1+3*cos(2*phi))* const_HN*(gn/g)/(r_1^3*r_2^3);                    
                 end                
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((U\A_cs2_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((U\A_up_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((U\A_dn_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((U\A_4_m_2*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((U\A_5_m_2*U).*Jlam)*i_U;
-
-                Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((U\A_dn_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((U\A_4_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((U\A_5_m_1*U).*Jlam)*i_U;            
+                if OPTIMIZATION.use_sparse
+                    Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*(Jlam_sparse *(i_U*A_cs2_m_2*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*(Jlam_sparse *(i_U*A_up_m_2*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*(Jlam_sparse *(i_U*A_dn_m_2*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*(Jlam_sparse *(i_U*A_4_m_2*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*(Jlam_sparse *(i_U*A_5_m_2*U))*i_U;
+    
+                    Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*(Jlam_sparse *(i_U*A_cs2_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*(Jlam_sparse *(i_U*A_up_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*(Jlam_sparse *(i_U*A_dn_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*(Jlam_sparse *(i_U*A_4_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*(Jlam_sparse *(i_U*A_5_m_1*U))*i_U;
+                else
+                    Rrf = Rrf -const_rel*(1/80)*A_cs2_m_1'*U*((i_U*A_cs2_m_2*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_up_m_1'*U*((i_U*A_up_m_2*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_dn_m_1'*U*((i_U*A_dn_m_2*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_4_m_1'*U*((i_U*A_4_m_2*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_5_m_1'*U*((i_U*A_5_m_2*U).*Jlam)*i_U;
+    
+                    Rrf = Rrf -const_rel*(1/80)*A_cs2_m_2'*U*((i_U*A_cs2_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_up_m_2'*U*((i_U*A_up_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_dn_m_2'*U*((i_U*A_dn_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_4_m_2'*U*((i_U*A_4_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(3/40)*A_5_m_2'*U*((i_U*A_5_m_1*U).*Jlam)*i_U;
+                end                                          
             end
         end
         %% CSA corr
@@ -410,13 +498,24 @@ for p = 1:length(tau)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn*g * beta^2 / (h*r^3);                    
                 end                
                 % Вклад в релаксационный оператор
-                Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((U\Az_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((U\Ap_m*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((U\Am_m*U).*Jlam)*i_U;
-
-                Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((U\A_cs2_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((U\A_up_m_1*U).*Jlam)*i_U;
-                Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((U\A_dn_m_1*U).*Jlam)*i_U;            
+                if OPTIMIZATION.use_sparse
+                    Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*(Jlam_sparse *(i_U*Az_m*U))*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*(Jlam_sparse *(i_U*Ap_m*U))*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*(Jlam_sparse *(i_U*Am_m*U))*i_U;
+    
+                    Rrf = Rrf -const_rel*(1/60)*Az_m'*U*(Jlam_sparse *(i_U*A_cs2_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*(Jlam_sparse *(i_U*A_up_m_1*U))*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*Am_m'*U*(Jlam_sparse *(i_U*A_dn_m_1*U))*i_U;
+                else
+                    Rrf = Rrf -const_rel*(1/60)*A_cs2_m_1'*U*((i_U*Az_m*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*A_up_m_1'*U*((i_U*Ap_m*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*A_dn_m_1'*U*((i_U*Am_m*U).*Jlam)*i_U;
+    
+                    Rrf = Rrf -const_rel*(1/60)*Az_m'*U*((i_U*A_cs2_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*Ap_m'*U*((i_U*A_up_m_1*U).*Jlam)*i_U;
+                    Rrf = Rrf -const_rel*(1/40)*Am_m'*U*((i_U*A_dn_m_1*U).*Jlam)*i_U; 
+                end
+                           
             end
         end
         %R_DD_CSA_corr = Rrf;
@@ -535,4 +634,5 @@ for p = 1:length(tau)
     fclose(fileID);
 end
 elapsed_time = toc;
-fprintf('Время выполнения: %.4f секунд\n', elapsed_time);
+fprintf('\n=== Выполнение завершено ===\n');
+fprintf('Общее время: %.4f секунд (%.2f минут) (%.2f часов)\n', elapsed_time, elapsed_time/60, elapsed_time/3600);
