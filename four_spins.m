@@ -17,12 +17,13 @@ sigmaZZ=136e-6;
 sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
 sigma3 = 7.925e-6; sigma4 = 7.591e-6;
-%sigma4 = 7.925e-6;
+sigma4 = 7.875e-6;
 d_sig=0.0e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4];
 
 r12 = 1.248; % Å
 J12 = 16 * 2 * pi; % Гц переводим в цикл. частоту
+J12 = 1 * 2 * pi; % Гц переводим в цикл. частоту
 dJ12 =0; % Гц
 
 % Параметры дополнительных ядер
@@ -67,6 +68,13 @@ J13 = (-0.42) * 2 * pi; J14 = (0.16) * 2 * pi;
 J23 = (1.67) * 2 * pi; J24 = (0.2) * 2 * pi;
 J34 = 7.96 * 2 * pi;
 
+J13 = (0) * 2 * pi; J14 = (0) * 2 * pi;
+J23 = (0) * 2 * pi; J24 = (0) * 2 * pi;
+J34 = 0 * 2 * pi;
+
+J13 = (0.5) * 2 * pi;
+J34 = 0.1 * 2 * pi;
+
 J_mas = [J12 J13 J14 J23 J24 J34];
 %параметры анизотроопии
 psi=-37*pi/180; % угол между XX и 12
@@ -81,7 +89,7 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 40;
+NB = 100;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
@@ -530,7 +538,7 @@ for p = 1:length(tau)
             s1 = scatter(B, T1_kin_2,sizes, 'filled', 'DisplayName', 'bi-exp fit long');
             %alpha(s1, abs(p2_kin./(p1_kin+p2_kin)));                    
         end
-        plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, Laplace'], 'LineWidth', 2);
+        plot(B/1e4, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, J_{HH} = ' num2str(J34/(2*pi)) ' Гц, \Delta\sigma_{HH}=' num2str((sigma3-sigma4)*1e6) ' ppm, J_{HN} = ' num2str(J13/(2*pi)) ' Гц, J_{NN}=' num2str(J12/(2*pi)) ' Гц'], 'LineWidth', 2);
         matrix = readmatrix('trans-azobenzene TLLS by PHOTO-SABRE Azo-H.txt');
         %errorbar(matrix(:, 4)*10, matrix(:, 5), matrix(:, 6), 'o-', 'LineWidth', 1, 'MarkerSize', 2, 'DisplayName', 'experiment');
         xlabel('Магнитное поле, Тл');
@@ -539,6 +547,8 @@ for p = 1:length(tau)
     end        
     legend(Location="southeast")
     %[t, s]=title('\tau_{c} = '+string(tau(p)*1e9)+' ns'+', T_{H3} = '+string(T1(3))+', T_{H4} = '+string(T1(4)));
+    %[t, s]=title('J_{NN}='+string(J12/(2*pi))+' Гц');
+
     % сохранение в файл    
     to_print=[B; real(ttau_S ./ tau_S)'; p1_kin'; T1_kin_1'; p2_kin'; T1_kin_2'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
