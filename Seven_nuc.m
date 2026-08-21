@@ -14,15 +14,15 @@ OPTIMIZATION.use_sparse = true;      % Использовать разрежен
 OPTIMIZATION.use_gpu = false;         % Использовать GPU (если доступно)
 
 NB = 1;
-B = linspace(3, 4, NB);
+B = linspace(3.3, 3.3, NB);
 B = 1 * 10.^(B);
 tau = [22e-12]; 
 tau_flip=10e-2;
 flip_flag=0;
-D_D_flag = 0;
+D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
-CSA_flag=0;
+CSA_flag=1;
 read_from_file_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
@@ -161,7 +161,7 @@ ro0 = kron(singlet, kron(equil, kron(equil, kron(equil, kron(equil, equil)))));
 
 %ro0 = kron(equil, kron(equil, kron(equil, kron(alpha, kron(equil, equil)))));
 if (T1_azo_flag==1)
-    ro0 = kron(kron(equil, alpha), kron(equil, kron(equil, kron(equil, kron(equil, equil)))));
+    ro0 = kron(kron(alpha, alpha), kron(equil, kron(equil, kron(equil, kron(equil, equil)))));
 end
 % Проектор на синглетное состояние первых двух спинов
 PS = (eye_dim-4*Iz{1}*Iz{2}-2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))*0.25; %Нужно поделить на 16, чтобы получить синглет+равновесие водородов
@@ -169,7 +169,7 @@ PT_p = (eye_dim+2*Iz{1}+2*Iz{2}+4*Iz{1}*Iz{2})*0.25;
 PT_0 = (eye_dim-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))*0.25;
 PT_m = (eye_dim-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})*0.25;
 if (T1_azo_flag==1)
-    PS = Iz{2};
+    PS = Iz{1}+Iz{2};
 end
 % DD-relax super
 if (read_from_file_flag==1)
@@ -184,7 +184,7 @@ for p = 1:length(tau)
     p1_kin = zeros(NB, 1);
     p2_kin = zeros(NB, 1);
     
-    parfor l = 1:NB
+    for l = 1:NB
         %% Гамильтониан Зеемана        
         H_zeeman = OPTIMIZATION.use_sparse * sparse(dim, dim) + ...
                    ~OPTIMIZATION.use_sparse * zeros(dim, dim);
@@ -216,17 +216,13 @@ for p = 1:length(tau)
         lam = kron(D, eye_dim) - kron(eye_dim, conj(D));
         U = kron(V, conj(V));
         i_V=inv(V);
-        i_U=kron(i_V, conj(i_V));              
-        % lam_diag = diag(D);
-        % lam_diff = lam_diag - lam_diag.';
-        % Jlam = 1 ./ (1/tau(p) + 1i * lam_diff);        
-        Jlam=zeros(dim^2, dim^2);               
-        for k1 = 1:dim^2
-            for k2 = 1:dim^2
-                %Jlam(i,k)=2*tau/(1+tau^2*(lam(i,i)-lam(k,k))^2);   %-inf->inf
-                Jlam(k1,k2)=1/(1/tau(p)+1i*(lam(k1,k1)-lam(k2,k2))); %0->inf 2xtimes slower
-            end    
-        end        
+        i_U=kron(i_V, conj(i_V));         
+              
+        lam_diag = diag(D);
+        lam_diff = lam_diag - lam_diag.';
+        Jlam = 1 ./ (1/tau(p) + 1i * lam_diff);
+        Jlam = Jlam(:);
+
         if OPTIMIZATION.use_sparse
             Jlam_sparse = spdiags(Jlam, 0, dim^2, dim^2);
             if OPTIMIZATION.use_gpu
