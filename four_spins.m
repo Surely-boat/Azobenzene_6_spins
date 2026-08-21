@@ -21,8 +21,9 @@ sigma3 = 7.925e-6; sigma4 = 7.591e-6;
 d_sig=0.0e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4];
 
-r12 = 1.248; % Å
+r12 = 1.249; % Å
 J12 = 16 * 2 * pi; % Гц переводим в цикл. частоту
+%J12 = 1 * 2 * pi; % Гц переводим в цикл. частоту
 dJ12 =0; % Гц
 
 % Параметры дополнительных ядер
@@ -35,7 +36,7 @@ r34 = 3.813;
 r13 = 2.495; r14 = 3.787; 
 r23 = 2.748; r24 = 2.544; 
 r34 = 4.279; 
-% two chained protons on one side
+%two chained protons on one side
 r13 = 2.495; r14 = 4.818;
 r23 = 2.748; r24 = 4.624; 
 r34 = 2.475; 
@@ -66,6 +67,13 @@ J34 = 2.11 * 2 * pi;
 J13 = (-0.42) * 2 * pi; J14 = (0.16) * 2 * pi;
 J23 = (1.67) * 2 * pi; J24 = (0.2) * 2 * pi;
 J34 = 7.96 * 2 * pi;
+% 
+% J13 = (0) * 2 * pi; J14 = (0) * 2 * pi;
+% J23 = (0) * 2 * pi; J24 = (0) * 2 * pi;
+% J34 = 0 * 2 * pi;
+% 
+% J13 = (0.5) * 2 * pi;
+% J34 = 0.1 * 2 * pi;
 
 J_mas = [J12 J13 J14 J23 J24 J34];
 %параметры анизотроопии
@@ -81,16 +89,16 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 40;
-B = linspace(3.3, 5.3, NB);
+NB = 30;
+B = linspace(2, 5.3, NB);
 B = 1 * 10.^(B);
 tau = [6e-11]; 
 tau_flip=1e-1;
 flip_flag=0;
-D_D_flag = 1;
+D_D_flag = 0;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
-CSA_flag=1;
+CSA_flag=0;
 read_from_file_flag=0;
 H_relax_flag=0;
 T0_flag=0;
@@ -98,7 +106,7 @@ T1_azo_flag=0;
 H3_T1_flag=0;
 H4_T1_flag=0;
 kin_flag=0;
-kin_1_flag=0;
+kin_1_flag=1;
 if (kin_1_flag==1)
     NB=1;
     B = 0.98*10.^[4];
@@ -461,8 +469,8 @@ for p = 1:length(tau)
         disp(l);
         %% расчёт кинетики
         if (kin_flag==1)||(kin_1_flag==1)
-            dt = 0.4; %с
-            Nt = 5000;
+            dt = 0.01; %с
+            Nt = 500;
             exp_M = expm(diff_M*dt);
             kin_S = zeros(Nt, 1);        
             t_mas=zeros(Nt, 1);        
@@ -508,7 +516,7 @@ for p = 1:length(tau)
     
     hold on;
     if (kin_1_flag==1)
-        plot(t_mas, real(real(kin_S)), 'DisplayName', 'calc, B = '+string(round(B(1)*1e-4, 3))+' Тл', 'LineWidth', 2);        
+        plot(t_mas, real(real(kin_S)), 'DisplayName', 'numerical, B = '+string(round(B(1)*1e-4, 3))+' Тл', 'LineWidth', 2);        
         %plot(t_mas, exp_model(params_fit, t_mas), '--k', 'LineWidth', 1, 'DisplayName', 'fit');
         dv_H=1e3 * g * beta * B(1) * (sigma_mas(4) - sigma_mas(3)) / h;
         V11_V22=(J34^2+dv_H^2)^(1/2)-J12;
@@ -517,7 +525,7 @@ for p = 1:length(tau)
         sin_2=4*V12^2/(4*V12^2+V11_V22^2);        
         dE = (4*V12^2+V11_V22^2)^(1/2);
         P_S_th=1-sin_2*(1-cos(dE*t_mas))/8;
-        plot(t_mas, P_S_th,'--k', 'DisplayName','theory')
+        plot(t_mas, P_S_th,'--k', 'DisplayName','analitical', 'LineWidth', 2)
         xlabel('Время, с');
         ylabel('Рs');
     else
@@ -530,15 +538,20 @@ for p = 1:length(tau)
             s1 = scatter(B, T1_kin_2,sizes, 'filled', 'DisplayName', 'bi-exp fit long');
             %alpha(s1, abs(p2_kin./(p1_kin+p2_kin)));                    
         end
-        plot(B, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, Laplace'], 'LineWidth', 2);
+        plot(B/1e4, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, J_{HH} = ' num2str(J34/(2*pi)) ' Гц, \Delta\sigma_{HH}=' num2str((sigma3-sigma4)*1e6) ' ppm, J_{HN} = ' num2str(J13/(2*pi)) ' Гц, J_{NN}=' num2str(J12/(2*pi)) ' Гц'], 'LineWidth', 2);
         matrix = readmatrix('trans-azobenzene TLLS by PHOTO-SABRE Azo-H.txt');
         %errorbar(matrix(:, 4)*10, matrix(:, 5), matrix(:, 6), 'o-', 'LineWidth', 1, 'MarkerSize', 2, 'DisplayName', 'experiment');
         xlabel('Магнитное поле, Тл');
         ylabel('Ts, с');
         set(gca, 'XScale', 'log');
     end        
-    legend(Location="southeast")
+    lgd=legend(Location="southeast");    
+    lgd.FontSize=12;
+    ax = gca;
+    ax.FontSize = 12;
     %[t, s]=title('\tau_{c} = '+string(tau(p)*1e9)+' ns'+', T_{H3} = '+string(T1(3))+', T_{H4} = '+string(T1(4)));
+    %[t, s]=title('J_{NN}='+string(J12/(2*pi))+' Гц');
+
     % сохранение в файл    
     to_print=[B; real(ttau_S ./ tau_S)'; p1_kin'; T1_kin_1'; p2_kin'; T1_kin_2'];
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');

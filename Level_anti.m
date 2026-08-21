@@ -6,14 +6,14 @@ g = 5.585;
 gn=-0.567;
 h = 1.054; % 1e-27
 %% Параметры расчёта
-NB = 900;
-B = linspace(2.3, 5.3, NB);
+NB = 1800;
+B = linspace(2, 5.5, NB);
 B = 1 * 10.^(B);
 find_ac_flag=1;
 ac_tres=5;
-hist_flag=0;
+hist_flag=1;
 % Количество спинов
-n_spins = 12;
+n_spins = 7;
 dim = 2^n_spins;
 %% Параметры системы
 % Химические (ppm)
@@ -165,7 +165,7 @@ for l = 1:NB
     fclose(fileID);
 end
 hold on;
-B_ac=[];
+B_ac =[];
 if (find_ac_flag==1)
     for i=1:dim
         for j=(i+1):dim
@@ -177,9 +177,9 @@ if (find_ac_flag==1)
                 %[values, indices] = findpeaks(to_analize);
                 for k=1:length(values)
                     if(abs(values(k))<ac_tres)
+                        B_ac = [B_ac, B(indices(k))]; 
                         if (hist_flag==0)
-                            %scatter([B(indices(k)) B(indices(k))], [Energy(indices(k), i) Energy(indices(k), j)], 75, '*');
-                            B_ac = [B_ac, B(indices(k))];                            
+                            scatter([B(indices(k)) B(indices(k))]/1e4, [Energy(indices(k), i) Energy(indices(k), j)], 75, '*');
                         end
                         
                     end
@@ -189,43 +189,43 @@ if (find_ac_flag==1)
         end
     end
 end
-
+disp(min(B_ac));
+disp(max(B_ac));
 timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
 fileID = fopen(['data/LAC_'  timestamp '.txt'],'w');
 fprintf(fileID,'%6.6f\n', B_ac');
 fclose(fileID);
 if (hist_flag==0)
     for l = 1:dim
-        %plot(B, Energy(:, l)); 
-    %     if(l==40)
-    %         plot(B, Energy(:, l));    
-    %     end
+        plot(B/1e4, Energy(:, l));         
     end
-    %ylim([-200 200])
+    ylim([-150 100])
     %ylim([-5e8 5e8])
 else    
     %data1=get(findobj(open('6_nuc_side_Ts_DD_CSA_60.fig'), 'Type','line'), {'XData','YData'});
 
-%     [counts, edges] = histcounts(B_ac, 'BinWidth', 100);
-%     centers = (edges(1:end-1) + edges(2:end)) / 2;
-%     scale_factor = 100;
-%     % Увеличиваем частоты
-%     counts = counts * scale_factor;   
-%     hold on;
-%     b = bar(centers, counts, 'Displayname', 'кол-во антиперес. N*50');
-%     b.FaceAlpha = 0.3;
-    %histogram(log(B_ac)/log(10), 'BinWidth', 0.1);
+    [counts, edges] = histcounts(B_ac/1e4,'BinWidth', 3000/1e4);
+    centers = (edges(1:end-1) + edges(2:end)) / 2;
+    scale_factor = 1;
+    % Увеличиваем частоты
+    counts = counts * scale_factor;   
+    hold on;
+    b = bar(centers, counts, 'Displayname', 'кол-во антиперес. N*50');
+    
+    %histogram(log(B_ac/1e4)/log(10), 'BinWidth', 3000/1e5);
     %plot(data1{1,1},data1{1,2}, 'DisplayName', '6_nuc_side_Ts_DD_CSA_60 ps', 'LineWidth', 2)
 
 end
 %plot(data{1,1},data{1,2}, 'k', 'DisplayName', '6_nuc_side_Ts_DD_CSA_60 ps', 'LineWidth', 2)
 %legend
-%xlabel('Магнитное поле, Гс');
-%ylabel('Частота, с^{-1}');
+xlabel('Магнитное поле, Тл');
+ylabel('Частота, с^{-1}');
+ylabel('Количество LAC');
 %set(gca, 'XScale', 'log');
-
+ax = gca;
+ax.FontSize = 12;
 
 %B_ac=(J12^2-J34^2)^(1/2)/(1e3*g*beta*abs(sigma3-sigma4)/h);
 %xline(B_ac, ':k', 'a-c','LineWidth',1);
 %legend
-%grid on;
+grid on;

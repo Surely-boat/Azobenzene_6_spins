@@ -20,17 +20,17 @@ tau = [22e-12];
 tau_flip=10e-2;
 flip_flag=0;
 D_D_flag = 1;
-D_D_corr_flag=1;
+D_D_corr_flag=0;
 CSA_D_corr_flag=0;
-CSA_flag=0;
-read_from_file_flag=0;
+CSA_flag=1;
+read_from_file_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
 kin_flag=0;
 kin_1_flag=0;
 if (kin_1_flag==1)
     NB=1;
-    B = 11070;
+    B = 1.485*10.^[4];
 end
 %% Проверка доступности GPU
 if OPTIMIZATION.use_gpu
@@ -619,9 +619,9 @@ for p = 1:length(tau)
     timestamp = datestr(now, 'yyyy_mm_dd__HH_MM_SS');
     
     if (T1_azo_flag==1)
-        fileID = fopen(['data/data_T1_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+        fileID = fopen(['data/Seven_data_T1_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
     else
-        fileID = fopen(['data/data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
+        fileID = fopen(['data/Seven_data_' num2str(tau(p)*1e9) '_' timestamp '.txt'],'w');
     end
     fprintf(fileID,'%6.6f %4.4f %4.4f %4.4f %4.4f %4.4f\r\n',to_print);
     fclose(fileID);
