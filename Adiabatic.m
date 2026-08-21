@@ -14,11 +14,11 @@ Find_S=zeros(NB, 1);
 t_mas=zeros(NB, 1);
 v_mas=zeros(NB, 1);
 B=zeros(NB, 1);
-v0=1;
-v_max=2;
+v0=400;
+v_max=2e4;
 tv=0.2;
 % Количество спинов
-n_spins = 4;
+n_spins = 7;
 dim = 2^n_spins;
 %% Параметры системы
 % Химические (ppm)
@@ -155,13 +155,15 @@ for l = 1:NB
     Find_S(l) = trace(PS * rho);   
     v_mas(l)=v;
 end
-plot(B, Find_S);
+plot(B/1e4, Find_S,'LineWidth',2);
 %plot(t_mas, B);
 %plot(t_mas, Find_S);
 %plot(t_mas, B);
 grid on;
 set(gca, 'XScale', 'log');
-xlabel('Магнитное поле, Гс');
+xlabel('Магнитное поле, Тл');
 ylabel('Ps');
+ax = gca;
+ax.FontSize = 12;
 
 

@@ -19,18 +19,19 @@ B = 1 * 10.^(B);
 tau = [22e-12]; 
 tau_flip=10e-2;
 flip_flag=0;
-D_D_flag = 1;
+D_D_flag = 0;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
-CSA_flag=1;
+CSA_flag=0;
 read_from_file_flag=0;
-H_relax_flag=1;
+H_relax_flag=0;
 T1_azo_flag=0;
 kin_flag=0;
-kin_1_flag=0;
+kin_1_flag=1;
 if (kin_1_flag==1)
     NB=1;
     B = 1.485*10.^[4];
+    B = 1e5;
 end
 if OPTIMIZATION.use_gpu
     B = gpuArray(B);
@@ -64,17 +65,17 @@ else
     sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5 sigma6];
 end
 
-r12 = 1.248; % Å
+r12 = 1.249; % Å
 J12 = 16 * 2 * pi; % Гц переводим в цикл. частоту
 dJ12 = 0; % Гц
 
 % Параметры дополнительных ядер
 % Расстояния до основной пары (в Å)
-r13 = 2.539; r14 = 2.470; r15 = 3.779; r16 = 2.734;
-r23 = 3.779; r24 = 2.734; r25 = 2.539; r26 = 2.470;
-r34 = 3.813; r35 = 6.317; r36 = 4.267;
-r45 = 4.267; r46 = 5.060;
-r56 = 3.813;
+r13 = 2.544; r14 = 2.495; r15 = 3.787; r16 = 2.748;
+r23 = 3.787; r24 = 2.748; r25 = 2.544; r26 = 2.495;
+r34 = 3.837; r35 = 6.330; r36 = 4.279;
+r45 = 4.279; r46 = 5.098;
+r56 = 3.837;
 if OPTIMIZATION.use_gpu
     r_mas=gpuArray([r12 r13 r14 r15 r16 r23 r24 r25 r26 r34 r35 r36 r45 r46 r56]);
 else
@@ -82,15 +83,15 @@ else
 end
 
 % Углы между связями HN-HN прилегающие
-phi_3114=99.2*pi/180;    phi_3116=108*pi/180;     phi_4116=152.9*pi/180;   phi_1442=27.1*pi/180;   
+phi_3114=99.2*pi/180;    phi_3116=107.8*pi/180;     phi_4116=153*pi/180;   phi_1442=27*pi/180;   
 phi_5226=phi_3114;        phi_4225=phi_3116;        phi_4226=phi_4116;        phi_1662=phi_1442;
 %NN-HN
-phi_2113=172.5*pi/180;   phi_2114=88.3*pi/180;    phi_2116=64.6*pi/180;
-phi_1225=172.5*pi/180;   phi_1226=88.3*pi/180;    phi_1224=64.6*pi/180;
+phi_2113=173*pi/180;   phi_2114=87.8*pi/180;    phi_2116=65.1*pi/180;
+phi_1225=phi_2113;   phi_1226=phi_2114;    phi_1224=phi_2116;
 %HN-HN нет взаимного атома
-phi_1324=72.02*pi/180;  phi_1326=80.85*pi/180;  phi_1325=pi;
-phi_1625=72.02*pi/180;  phi_1624=pi;
-phi_2514=80.85*pi/180; phi_2614=pi;
+phi_1324=72.1*pi/180;  phi_1326=80.8*pi/180;  phi_1325=pi;
+phi_1625=phi_1324;  phi_1624=pi;
+phi_2514=phi_1326; phi_2614=pi;
 
 dJ1=2;
 dJ2=0;
@@ -118,6 +119,7 @@ phi_14=92.2*pi/180;
 phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
+
 %% Создание операторов для каждого спина
 up = [0 1; 0 0]; dn = [0 0; 1 0]; z = [0.5 0; 0 -0.5];
 if OPTIMIZATION.use_sparse
@@ -301,8 +303,7 @@ for p = 1:length(tau)
             const_HN = 1e6 * g^2*gn^2 * beta^4 / (h^2);
             const_NN = 1e6 * gn^4 * beta^4 / (h^2);
 
-            all_pairs = nchoosek(1:n_spins, 2);   
-            all_pairs = nchoosek(1:3, 2);
+            all_pairs = nchoosek(1:n_spins, 2); 
             i_idx = all_pairs(:, 1);
             j_idx = all_pairs(:, 2);        
             for idx = 1:size(all_pairs, 1)
@@ -579,8 +580,8 @@ for p = 1:length(tau)
         disp(['Ts = ' num2str(real(ttau_S(l)/tau_S(l)))]);
         %% расчёт кинетики
         if (kin_flag==1)||(kin_1_flag==1)
-            dt = 0.1; %с
-            Nt = 5000;
+            dt = 0.01; %с
+            Nt = 500;
             exp_M = expm(diff_M*dt);
             kin_S = zeros(Nt, 1);        
             t_mas=zeros(Nt, 1);        
@@ -632,6 +633,21 @@ for p = 1:length(tau)
     end
     fprintf(fileID,'%6.6f %4.4f %4.4f %4.4f %4.4f %4.4f\r\n',to_print);
     fclose(fileID);
+end
+if (kin_1_flag==1)
+    hold on;
+    plot(t_mas, real(kin_S), 'DisplayName', 'numerical','LineWidth',2);
+    dnu=(J23-J13);
+    P_S_theory=1-(1/16)*(4*dnu^2/(4*dnu^2+J12^2))*(1-cos(2*pi*t_mas*(4*dnu^2+J12^2)^(1/2)))-(1/4)*(dnu^2/(dnu^2+J12^2))*(1-cos(2*pi*t_mas*(dnu^2+J12^2)^(1/2)));
+    plot(t_mas, real(kin_S), '--k', 'DisplayName', 'analytical','LineWidth',2);
+    grid on
+    xlabel('Время, с');
+    ylabel('P_{S}');
+    lgd=legend('Interpreter', 'latex','NumColumns', 1);
+    lgd.FontSize=12;
+    ax = gca;
+    ax.FontSize = 12;
+    xlim([0, 2.5]);
 end
 elapsed_time = toc;
 fprintf('\n=== Выполнение завершено ===\n');

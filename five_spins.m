@@ -24,13 +24,15 @@ r45 = 4.267;
 % one side
 r13 = 2.495; r14 = 4.818; r15 = 5.987;
 r23 = 2.748; r24 = 4.624; r25 = 5.276;
+r13 = 4.495; r14 = 4.818; r15 = 5.987;
+r23 = 4.748; r24 = 4.624; r25 = 5.276;
 r34 = 2.475; r35 = 4.289;
 r45 = 2.474;
 % triangle
-r13 = 2.495; r14 = 4.818; r15 = 5.987;
-r23 = 2.748; r24 = 4.624; r25 = 2.748;
-r34 = 2.475; r35 = 4.289;
-r45 = 2.474;
+% r13 = 2.495; r14 = 4.818; r15 = 5.987;
+% r23 = 2.748; r24 = 4.624; r25 = 2.748;
+% r34 = 2.475; r35 = 4.289;
+% r45 = 2.474;
 
 
 r_mas=[r12 r13 r14 r15 r23 r24 r25 r34 r35 r45];
@@ -52,8 +54,8 @@ sigmaYY=-146e-6;
 sigmaZZ=136e-6;
 sigma1 = 509.94e-6;
 sigma2 = 509.94e-6;
-%sigma3 = 7.925e-6; sigma4 = 7.591e-6; sigma5 = 7.557e-6;
-sigma3 = 7.925e-6; sigma4 = 7.591e-6; sigma5 = 7.925e-6;
+sigma3 = 7.925e-6; sigma4 = 7.591e-6; sigma5 = 7.557e-6;
+%sigma3 = 7.925e-6; sigma4 = 7.591e-6; sigma5 = 7.925e-6;
 sigma_mas=[sigma1 sigma2 sigma3 sigma4 sigma5];
 
 dJ1=2;
@@ -71,11 +73,11 @@ J23 = (1.67) * 2 * pi; J24 = (0.2) * 2 * pi; J25 = (0.31) * 2 * pi;
 J34 = 7.96 * 2 * pi; J35 = 1.22 * 2 * pi; 
 J45 = 7.37 * 2 * pi; 
 % triangle
-J13 = (-0.42) * 2 * pi; J14 = (0.16) * 2 * pi; J15 = (-0.42) * 2 * pi;
-J23 = (1.67) * 2 * pi; J24 = (0.2) * 2 * pi; J25 = (1.67) * 2 * pi;
-
-J34 = 7.37 * 2 * pi; J35 = 1.22 * 2 * pi; 
-J45 = 7.37 * 2 * pi; 
+% J13 = (-0.42) * 2 * pi; J14 = (0.16) * 2 * pi; J15 = (-0.42) * 2 * pi;
+% J23 = (1.67) * 2 * pi; J24 = (0.2) * 2 * pi; J25 = (1.67) * 2 * pi;
+% 
+% J34 = 7.37 * 2 * pi; J35 = 1.22 * 2 * pi; 
+% J45 = 7.37 * 2 * pi; 
 J_mas = [J12 J13 J14 J15 J23 J24 J25 J34 J35 J45];
 %параметры анизотроопии
 psi=-37*pi/180; % угол между XX и 12
@@ -90,21 +92,22 @@ phi_26=-87.8*pi/180;
 phi_24=65.1*pi/180;
 phi_25=173*pi/180;
 %% Параметры расчёта
-NB = 28;
+NB = 10;
 B = linspace(3.3, 5.3, NB);
 B = 1 * 10.^(B);
-tau = [2.5e-11]; 
+tau = [6e-11]; 
 D_D_flag = 1;
 D_D_corr_flag=0;
 CSA_D_corr_flag=0;
 CSA_flag=1;
+T1_proton_flag=1;
 H_relax_flag=0;
 T1_azo_flag=0;
 kin_flag=0;
-kin_1_flag=0;
+kin_1_flag=1;
 if (kin_1_flag==1)
     NB=1;
-    B = 0.25*10.^[4];
+    B = 0.5*10.^[4];
 end
 %% Создание операторов для каждого спина
 up=[0 1; 0 0]; dn=[0 0; 1 0]; z=[0.5 0; 0 -0.5];
@@ -125,7 +128,10 @@ singlet=[0 0 0 0;
     0 0 0 0];
 
 ro0 = kron(singlet, kron(equil, kron(equil, equil)));
-%ro0 = kron(equil, kron(equil, kron(equil, kron(alpha, kron(equil, equil)))));
+if (T1_proton_flag==1)
+    ro0 = kron(equil, kron(equil, kron(alpha1, kron(alpha1, alpha1))));
+end
+
 if (T1_azo_flag==1)
     ro0 = kron(kron(alpha1, alpha1), kron(equil, kron(equil, equil)));
 end
@@ -136,6 +142,9 @@ PT_0 = (eye(dim, dim)-4*Iz{1}*Iz{2}+2*(Iup{1}*Idn{2}+Idn{1}*Iup{2}))/4;
 PT_m = (eye(dim, dim)-2*Iz{1}-2*Iz{2}+4*Iz{1}*Iz{2})/4;
 if (T1_azo_flag==1)
     PS = Iz{1}+Iz{2};
+end
+if (T1_proton_flag==1)
+    PS = Iz{4};
 end
 I_dim=eye(dim);
 %% Собственная релаксация протонов
@@ -161,7 +170,7 @@ for p = 1:length(tau)
     p1_kin = zeros(NB, 1);
     p2_kin = zeros(NB, 1);
     
-    parfor l = 1:NB
+    for l = 1:NB
         %% Гамильтониан Зеемана        
         H_zeeman = zeros(dim, dim);
         H_zeeman = H_zeeman - 1e3 * gn * beta * B(l) * (1 - sigma_mas(1)) / h .* (Iz{1}+Iz{2});
@@ -360,7 +369,7 @@ for p = 1:length(tau)
                 r = r_CSA_mas(idx);            
                 phi = phi_mas(idx); 
                 const_CSA=1e3*gn*beta/h;
-                sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi))
+                sigma_corr=2*sigmaZZ-sigmaXX-sigmaYY-3*(sigmaXX-sigmaYY)*cos(2*(phi-psi));
 
                 if (idx<2)
                     const_rel=-sigma_corr*const_CSA*B(l)*1e3 *gn^2 * beta^2 / (h*r^3);                    
@@ -396,6 +405,9 @@ for p = 1:length(tau)
         if (T1_azo_flag==1)
             tau_S(l) = prob_S_s;
         end
+        if (T1_proton_flag==1)
+            tau_S(l) = prob_S_s;
+        end
         
         rv_s = (I0 * s - diff_M) \ ((I0 * s - diff_M) \ rv0);
         rho_s = reshape(rv_s, [dim, dim]);
@@ -405,11 +417,14 @@ for p = 1:length(tau)
         if (T1_azo_flag==1)
             ttau_S(l) = prob_S_s;
         end
+        if (T1_proton_flag==1)
+            ttau_S(l) = prob_S_s;
+        end
         
         disp(l);
         %% расчёт кинетики
         if (kin_flag==1)||(kin_1_flag==1)
-            dt = 1; %с
+            dt = 0.01; %с
             Nt = 5000;
             exp_M = expm(diff_M*dt);
             kin_S = zeros(Nt, 1);        
@@ -425,6 +440,9 @@ for p = 1:length(tau)
             if (T1_azo_flag==1)
                 exp_model = @(p, x) p(1)*exp(-x/p(2))+p(3)*exp(-x/p(4));
             end
+            if (T1_proton_flag==1)
+                exp_model = @(p, x) p(1)*exp(-x/p(2))+p(3)*exp(-x/p(4));
+            end
             initial_guess = [0.1, 10, 0.5, 100];
             lb = [0, 0, 0, 0]; % Нижние границы
             ub = [1, inf, 1, inf];   % Верхние границы
@@ -434,6 +452,7 @@ for p = 1:length(tau)
             p2_kin(l)=params_fit(3);
             T1_kin_2(l) = params_fit(4);
             if (kin_1_flag==1)
+                hold on;
                 plot(t_mas, real(real(kin_S)), 'DisplayName', 'calc, B = '+string(round(B(1)*1e-4, 3))+' Тл', 'LineWidth', 2);        
                 plot(t_mas, exp_model(params_fit, t_mas), '--k', 'LineWidth', 1, 'DisplayName', 'fit');
                 xlabel('Время, с');
@@ -461,7 +480,7 @@ for p = 1:length(tau)
     
     hold on;
     
-    if (kin_flag==1)&&(kin_1_flag~=1)
+    if (kin_flag==1)&&(kin_1_flag==1)
         sizes=75*abs(p1_kin./(p1_kin+p2_kin));
         s1 = scatter(B/10, T1_kin_1, sizes, 'filled', 'DisplayName', 'bi-exp fit short');            
         %alpha(s1, abs(p1_kin./(p1_kin+p2_kin))); 
@@ -470,14 +489,18 @@ for p = 1:length(tau)
         %alpha(s1, abs(p2_kin./(p1_kin+p2_kin))); 
         plot(B/10, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, Laplace'], 'LineWidth', 2);
     end        
-    plot(B/10, real(ttau_S ./ tau_S), 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e9) ' ns, Laplace'], 'LineWidth', 2);
+    %plot(B/1e4, real(ttau_S ./ tau_S), 'o-','MarkerSize', 3, 'DisplayName', ['\tau_c = ' num2str(tau(p)*1e12) ' ps, uncorr'], 'LineWidth', 2);
     matrix = readmatrix('trans-azobenzene TLLS by PHOTO-SABRE Azo-H.txt');
-    errorbar(matrix(:, 4), matrix(:, 5), matrix(:, 6), 'o-', 'LineWidth', 1, 'MarkerSize', 2, 'DisplayName', 'experiment');
+    %errorbar(matrix(:, 4), matrix(:, 5), matrix(:, 6), 'o-', 'LineWidth', 1, 'MarkerSize', 2, 'DisplayName', 'experiment');
     xlabel('Магнитное поле, Тл');
     ylabel('Ts, с');
-    set(gca, 'XScale', 'log');
-        
-    legend
+    %set(gca, 'XScale', 'log');        
+    
+    lgd=legend('Location', 'southwest');
+    lgd.FontSize=12;
+    ax = gca;
+    ax.FontSize = 12;
+    grid on
     if (H_relax_flag==1)        
         [t, s]=title('\tau_{c} = '+string(tau(p)*1e9)+' ns'+', T_{H3} = '+string(T1(3))+', T_{H4} = '+string(T1(4))+', T_{H5} = '+string(T1(5)));
     else
